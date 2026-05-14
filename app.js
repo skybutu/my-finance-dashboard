@@ -326,16 +326,16 @@ function renderReturnChart(scored) {
     data: {
       labels: scored.map(s => s.symbol),
       datasets: [
-        { label: "1Y %",  data: scored.map(s => s.data?.return1y  ?? 0), backgroundColor: "#e91e8c99", borderColor: "#e91e8c", borderWidth: 1 },
-        { label: "3Y %",  data: scored.map(s => s.data?.return3y  ?? 0), backgroundColor: "#3b82f699", borderColor: "#3b82f6", borderWidth: 1 },
-        { label: "5Y %",  data: scored.map(s => s.data?.return5y  ?? 0), backgroundColor: "#22c55e99", borderColor: "#22c55e", borderWidth: 1 }
+        { label: "1Y %",  data: scored.map(s => s.data?.return1y  ?? 0), backgroundColor: "rgba(59,130,246,0.55)",  borderColor: "#3b82f6", borderWidth: 1 },
+        { label: "3Y %",  data: scored.map(s => s.data?.return3y  ?? 0), backgroundColor: "rgba(139,92,246,0.55)",  borderColor: "#8b5cf6", borderWidth: 1 },
+        { label: "5Y %",  data: scored.map(s => s.data?.return5y  ?? 0), backgroundColor: "rgba(34,211,105,0.55)",  borderColor: "#22d369", borderWidth: 1 }
       ]
     },
     options: {
-      plugins: { legend: { labels: { color: "#e0e0e0", font: { size: 11 } } } },
+      plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } },
       scales: {
-        x: { ticks: { color: "#aaa" }, grid: { color: "#333" } },
-        y: { ticks: { color: "#aaa" }, grid: { color: "#333" }, title: { display: true, text: "%", color: "#666" } }
+        x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
+        y: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" }, title: { display: true, text: "%", color: "#6b7280" } }
       }
     }
   });
@@ -551,6 +551,15 @@ function renderDashboard() {
   const c   = calc();
   const inp = state.inputs;
   const efPctStr = c.efProgress.toFixed(1) + "%";
+
+  // Hero banner
+  const heroSurplus = document.getElementById("hero-surplus");
+  if (heroSurplus) {
+    heroSurplus.textContent = fmtSigned(c.monthlySurplus);
+    heroSurplus.className   = "hero-kpi-value currency " + (c.monthlySurplus >= 0 ? "positive" : "negative");
+  }
+  const heroMeta = document.getElementById("hero-meta");
+  if (heroMeta) heroMeta.textContent = fmt(inp.monthlyIncome) + " הכנסה  —  " + fmt(inp.monthlyExpenses) + " הוצאות";
 
   // מצב החודש
   document.getElementById("dash-income").textContent        = fmt(inp.monthlyIncome);
@@ -935,13 +944,13 @@ function renderCharts() {
 
   const catNames  = state.categories.map(c => c.name);
   const catAmts   = state.categories.map(c => c.amount);
-  const palette   = ["#e91e8c","#9c27b0","#3f51b5","#00bcd4","#4caf50","#ff9800","#f44336","#795548"];
+  const palette   = ["#3b82f6","#8b5cf6","#06b6d4","#22d369","#f59e0b","#f43f5e","#c026d3","#64748b"];
 
   // Donut — by category
   chartInstances["chart-donut-cat"] = new Chart(document.getElementById("chart-donut-cat"), {
     type: "doughnut",
     data: { labels: catNames, datasets: [{ data: catAmts, backgroundColor: palette }] },
-    options: { plugins: { legend: { labels: { color: "#e0e0e0", font: { size: 11 } } } }, cutout: "65%" }
+    options: { plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } }, cutout: "65%" }
   });
 
   // Bar — by category
@@ -955,8 +964,8 @@ function renderCharts() {
       indexAxis: "y",
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: "#aaa" }, grid: { color: "#333" } },
-        y: { ticks: { color: "#e0e0e0" }, grid: { color: "#333" } }
+        x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
+        y: { ticks: { color: "#f0f0fa" }, grid: { color: "rgba(255,255,255,0.05)" } }
       }
     }
   });
@@ -970,17 +979,17 @@ function renderCharts() {
       datasets: [{
         label: "חיוב כרטיס ₪",
         data: trend.map(t => t.amount),
-        backgroundColor: "#e91e8c88",
-        borderColor: "#e91e8c",
+        backgroundColor: "rgba(59,130,246,0.50)",
+        borderColor: "#3b82f6",
         borderWidth: 2,
         type: "bar"
       }]
     },
     options: {
-      plugins: { legend: { labels: { color: "#e0e0e0" } } },
+      plugins: { legend: { labels: { color: "#f0f0fa" } } },
       scales: {
-        x: { ticks: { color: "#aaa" }, grid: { color: "#333" } },
-        y: { ticks: { color: "#aaa" }, grid: { color: "#333" } }
+        x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
+        y: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } }
       }
     }
   });
@@ -998,9 +1007,9 @@ function renderCharts() {
     type: "doughnut",
     data: {
       labels: Object.keys(groups),
-      datasets: [{ data: Object.values(groups), backgroundColor: ["#4caf50","#e91e8c","#3f51b5","#ff9800","#777"] }]
+      datasets: [{ data: Object.values(groups), backgroundColor: ["#22d369","#3b82f6","#8b5cf6","#f59e0b","#475569"] }]
     },
-    options: { plugins: { legend: { labels: { color: "#e0e0e0" } } }, cutout: "65%" }
+    options: { plugins: { legend: { labels: { color: "#f0f0fa" } } }, cutout: "65%" }
   });
 
   // Emergency fund progress bar (HTML, not chart)

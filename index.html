@@ -9,7 +9,7 @@
 <body>
 
 <header id="app-header">
-  <div>
+  <div class="header-brand">
     <div class="logo">לוח הפיננסים</div>
     <div class="sub">ניהול כספים אישי</div>
   </div>
@@ -19,6 +19,14 @@
 
   <!-- ══ DASHBOARD ══ -->
   <section id="screen-dashboard">
+
+    <div class="dashboard-hero">
+      <div class="hero-eyebrow">מצב פיננסי</div>
+      <div class="hero-kpi-label">עודף / גירעון חודשי</div>
+      <div class="hero-kpi-value currency" id="hero-surplus">—</div>
+      <div class="hero-meta" id="hero-meta">—</div>
+    </div>
+
     <h2 class="section-title">מצב החודש</h2>
 
     <div class="card">
@@ -535,6 +543,8 @@
     </div>
   </div>
 </div>
+
+<footer id="app-footer">לוח הפיננסים · נתונים מקומיים בלבד · לא ייעוץ השקעות</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="app.js"></script>
