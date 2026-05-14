@@ -91,6 +91,21 @@
           <div class="number" id="dash-ef-gap">—</div>
         </div>
       </div>
+      <div class="ef-milestones">
+        <div class="ef-ms" id="ef-ms-3">
+          <span class="ef-ms-label">3 חודשים</span>
+          <span class="ef-ms-val currency" id="dash-ef-3">—</span>
+        </div>
+        <div class="ef-ms" id="ef-ms-6">
+          <span class="ef-ms-label">6 חודשים</span>
+          <span class="ef-ms-val currency" id="dash-ef-6">—</span>
+        </div>
+        <div class="ef-ms" id="ef-ms-12">
+          <span class="ef-ms-label">12 חודשים</span>
+          <span class="ef-ms-val currency" id="dash-ef-12">—</span>
+        </div>
+      </div>
+      <div class="small" id="dash-ef-months-covered">—</div>
       <div class="progress-track">
         <div class="progress-fill" id="ef-progress-bar" style="width:0%">0%</div>
       </div>
@@ -115,6 +130,7 @@
         </div>
       </div>
       <div id="dash-label" class="rec-label">—</div>
+      <div id="dash-decision-chain" class="decision-chain"></div>
     </div>
 
     <div class="card">
@@ -199,8 +215,8 @@
           <input type="number" id="inp-ef-months" min="1" max="24" />
         </div>
         <div class="form-group">
-          <label for="inp-ef-ratio">שיעור הוצאות בסיסיות (0–1)</label>
-          <input type="number" id="inp-ef-ratio" min="0" max="1" step="0.05" />
+          <label for="inp-ef-essential">הוצאות בסיסיות חודשיות (₪)</label>
+          <input type="number" id="inp-ef-essential" min="0" step="100" />
         </div>
       </div>
       <div class="form-group">
@@ -369,6 +385,14 @@
       </div>
       <div class="small" id="ef-chart-label">—</div>
     </div>
+    <div class="chart-card">
+      <h3>חיסכון מול השקעה — הקצאה מוצעת</h3>
+      <canvas id="chart-save-invest"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>קרן חירום — יעדים ומצב נוכחי</h3>
+      <canvas id="chart-ef-milestones"></canvas>
+    </div>
   </section>
 
   <!-- ══ ETF RECOMMENDATION ══ -->
@@ -437,8 +461,35 @@
       <div id="scenario-rows"></div>
     </div>
 
+    <div class="card">
+      <div class="card-section-title">מחשבון DCA — השקעה חודשית קבועה</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="inp-dca-monthly">סכום חודשי ידני (₪) — 0 = אוטומטי</label>
+          <input type="number" id="inp-dca-monthly" min="0" step="50" />
+        </div>
+        <div class="form-group">
+          <label>סכום בפועל לחודש</label>
+          <div class="card-value currency" id="dca-monthly-display">—</div>
+        </div>
+      </div>
+      <div class="kpi-item" style="margin-bottom:.65rem;">
+        <div class="card-label">הערכת סה"כ תרומה — 12 חודשים</div>
+        <div class="card-value currency" id="dca-total-1yr">—</div>
+      </div>
+      <div class="table-wrap dca-table-wrap">
+        <table>
+          <thead><tr><th>חודש</th><th>הפקדה</th><th>מצטבר</th></tr></thead>
+          <tbody id="dca-breakdown-rows"></tbody>
+        </table>
+      </div>
+      <div class="disclaimer" style="margin-top:.75rem;">
+        ⚠ חישוב DCA מניח הפקדה קבועה ואינו לוקח בחשבון תנודות שוק, עלויות עסקה, מיסוי או שינויים בהכנסה. זהו כלי עזר לתכנון בלבד ואינו ייעוץ השקעות.
+      </div>
+    </div>
+
     <div class="disclaimer">
-      ⚠ המידע באפליקציה הוא לצורכי מידע והשוואה בלבד ואינו מהווה ייעוץ השקעות, ייעוץ פיננסי או המלצה אישית לקנייה/מכירה של נייר ערך. לפני החלטת השקעה יש להתייעץ עם בעל רישיון מתאים.
+      ⚠ המידע באפליקציה הוא לצורכי מידע והשוואה בלבד ואינו מהווה ייעוץ השקעות, ייעוץ פיננסי או המלצה אישית לקנייה/מכירה של נייר ערך. לפני החלטת השקעה יש להתייעץ עם בעל רישיון מתאים. כלי זה מיועד לחינוך פיננסי בלבד.
     </div>
   </section>
 
@@ -469,6 +520,7 @@
       <div class="small">הציון המשוקלל מותאם לפי הגדרת הסיכון שלך: <strong id="etfc-risk-display">—</strong></div>
     </div>
 
+    <div class="etfc-manual-label" id="etfc-manual-label">⚠ נתוני ETF מתוחזקים ידנית — לעיון בלבד, אינם עדכוניים בזמן אמת</div>
     <div id="etfc-cards-container"></div>
 
     <div class="chart-card">
@@ -478,7 +530,7 @@
     </div>
 
     <div class="disclaimer">
-      ⚠ המידע באפליקציה הוא לצורכי מידע והשוואה בלבד ואינו מהווה ייעוץ השקעות, ייעוץ פיננסי או המלצה אישית לקנייה/מכירה של נייר ערך. לפני החלטת השקעה יש להתייעץ עם בעל רישיון מתאים. נתוני שוק עלולים להיות מושהים או לא מדויקים. אין להזין מפתח API רגיש אם האפליקציה מתארחת ציבורית בצד לקוח בלבד.
+      ⚠ המידע באפליקציה הוא לצורכי מידע והשוואה בלבד ואינו מהווה ייעוץ השקעות, ייעוץ פיננסי או המלצה אישית לקנייה/מכירה של נייר ערך. לפני החלטת השקעה יש להתייעץ עם בעל רישיון מתאים. נתוני שוק עלולים להיות מושהים או לא מדויקים. אין להזין מפתח API רגיש אם האפליקציה מתארחת ציבורית בצד לקוח בלבד. כלי זה מיועד לחינוך פיננסי בלבד.
     </div>
   </section>
 

@@ -13,7 +13,8 @@ const DEFAULTS = {
     emergencyFundMonths: 6,
     riskTolerance: "medium",
     investmentHorizon: "5+",
-    essentialExpenseRatio: 0.7
+    essentialMonthly: 4025,
+    dcaMonthly: 0
   },
   categories: [
     { id: 1, name: "רפואה ובתי מרקחת",   amount: 1341.67, type: "need",     source: "MAX", month: "June 2026" },
@@ -61,11 +62,28 @@ function loadState() {
         Array.isArray(parsed.categories) &&
         Array.isArray(parsed.transactions)
       ) {
+        if ("essentialExpenseRatio" in parsed.inputs && !("essentialMonthly" in parsed.inputs)) {
+          parsed.inputs.essentialMonthly = parsed.inputs.essentialExpenseRatio * (parsed.inputs.monthlyExpenses || 5750.08);
+        }
+        mergeDefaults(parsed, DEFAULTS);
         return parsed;
       }
     }
   } catch (e) {}
   return JSON.parse(JSON.stringify(DEFAULTS));
+}
+
+function mergeDefaults(loaded, defs) {
+  for (const k of Object.keys(defs.inputs)) {
+    if (!(k in loaded.inputs)) loaded.inputs[k] = defs.inputs[k];
+  }
+  if (!loaded.etfSettings) {
+    loaded.etfSettings = JSON.parse(JSON.stringify(defs.etfSettings));
+  } else {
+    for (const k of Object.keys(defs.etfSettings)) {
+      if (!(k in loaded.etfSettings)) loaded.etfSettings[k] = defs.etfSettings[k];
+    }
+  }
 }
 
 function saveState() {
@@ -101,13 +119,13 @@ function uid() { return Date.now() + Math.random().toString(36).slice(2); }
 
 /* ─── ETF Market Data ─── */
 const ETF_METADATA = {
-  VTI:  { name: "Vanguard Total Stock Market ETF",    expenseRatio: 0.03, return1y: 24.8,  return3y: 9.1,  return5y: 13.8, volatility: 14.9, dividendYield: 1.4, aum: 390, diversification: 92, demoPrice: 238.45, demoDailyChange:  0.42, category: "US Total Market"          },
-  VOO:  { name: "Vanguard S&P 500 ETF",               expenseRatio: 0.03, return1y: 25.4,  return3y: 10.1, return5y: 14.6, volatility: 14.6, dividendYield: 1.3, aum: 500, diversification: 85, demoPrice: 543.21, demoDailyChange:  0.38, category: "US Large Cap S&P 500"     },
-  VT:   { name: "Vanguard Total World Stock ETF",     expenseRatio: 0.07, return1y: 21.8,  return3y:  6.4, return5y: 10.9, volatility: 13.2, dividendYield: 2.0, aum:  40, diversification: 98, demoPrice: 112.34, demoDailyChange:  0.31, category: "Global All Market"        },
-  QQQM: { name: "Invesco Nasdaq-100 ETF",             expenseRatio: 0.15, return1y: 29.3,  return3y:  8.8, return5y: 20.5, volatility: 19.8, dividendYield: 0.6, aum:  38, diversification: 55, demoPrice: 198.76, demoDailyChange:  0.84, category: "US Technology Nasdaq-100" },
-  SCHD: { name: "Schwab US Dividend Equity ETF",      expenseRatio: 0.06, return1y: 18.2,  return3y:  5.8, return5y: 12.1, volatility: 13.3, dividendYield: 3.4, aum:  60, diversification: 70, demoPrice:  28.15, demoDailyChange: -0.12, category: "US Dividend Equity"       },
-  VXUS: { name: "Vanguard Total International ETF",  expenseRatio: 0.07, return1y: 17.1,  return3y:  2.1, return5y:  7.2, volatility: 13.7, dividendYield: 3.0, aum:  65, diversification: 95, demoPrice:  58.92, demoDailyChange:  0.21, category: "International Developed"  },
-  BND:  { name: "Vanguard Total Bond Market ETF",     expenseRatio: 0.03, return1y:  1.3,  return3y: -2.1, return5y:  1.1, volatility:  5.2, dividendYield: 3.5, aum: 110, diversification: 88, demoPrice:  73.45, demoDailyChange: -0.08, category: "US Total Bond Market"     }
+  VTI:  { name: "Vanguard Total Stock Market ETF",    expenseRatio: 0.03, return1y: 24.8,  return3y: 9.1,  return5y: 13.8, volatility: 14.9, dividendYield: 1.4, aum: 390, diversification: 92, demoPrice: 238.45, demoDailyChange:  0.42, category: "US Total Market",          region: "US",            currency: "USD",   dcaSuitability: 95, longTermScore: 95 },
+  VOO:  { name: "Vanguard S&P 500 ETF",               expenseRatio: 0.03, return1y: 25.4,  return3y: 10.1, return5y: 14.6, volatility: 14.6, dividendYield: 1.3, aum: 500, diversification: 85, demoPrice: 543.21, demoDailyChange:  0.38, category: "US Large Cap S&P 500",     region: "US",            currency: "USD",   dcaSuitability: 95, longTermScore: 95 },
+  VT:   { name: "Vanguard Total World Stock ETF",     expenseRatio: 0.07, return1y: 21.8,  return3y:  6.4, return5y: 10.9, volatility: 13.2, dividendYield: 2.0, aum:  40, diversification: 98, demoPrice: 112.34, demoDailyChange:  0.31, category: "Global All Market",        region: "Global",        currency: "Multi", dcaSuitability: 90, longTermScore: 95 },
+  QQQM: { name: "Invesco Nasdaq-100 ETF",             expenseRatio: 0.15, return1y: 29.3,  return3y:  8.8, return5y: 20.5, volatility: 19.8, dividendYield: 0.6, aum:  38, diversification: 55, demoPrice: 198.76, demoDailyChange:  0.84, category: "US Technology Nasdaq-100", region: "US",            currency: "USD",   dcaSuitability: 85, longTermScore: 75 },
+  SCHD: { name: "Schwab US Dividend Equity ETF",      expenseRatio: 0.06, return1y: 18.2,  return3y:  5.8, return5y: 12.1, volatility: 13.3, dividendYield: 3.4, aum:  60, diversification: 70, demoPrice:  28.15, demoDailyChange: -0.12, category: "US Dividend Equity",       region: "US",            currency: "USD",   dcaSuitability: 80, longTermScore: 80 },
+  VXUS: { name: "Vanguard Total International ETF",  expenseRatio: 0.07, return1y: 17.1,  return3y:  2.1, return5y:  7.2, volatility: 13.7, dividendYield: 3.0, aum:  65, diversification: 95, demoPrice:  58.92, demoDailyChange:  0.21, category: "International Developed",  region: "International", currency: "Multi", dcaSuitability: 80, longTermScore: 85 },
+  BND:  { name: "Vanguard Total Bond Market ETF",     expenseRatio: 0.03, return1y:  1.3,  return3y: -2.1, return5y:  1.1, volatility:  5.2, dividendYield: 3.5, aum: 110, diversification: 88, demoPrice:  73.45, demoDailyChange: -0.08, category: "US Total Bond Market",     region: "US",            currency: "USD",   dcaSuitability: 75, longTermScore: 70 }
 };
 
 function getEtfSettings() {
@@ -234,6 +252,11 @@ function getEtfTags(sym, data) {
   if (data.dividendYield > 2.5)tags.push({ label: "דיבידנד גבוה",  color: "blue"   });
   if (data.diversification > 90) tags.push({ label: "פיזור גלובלי",color: "blue"   });
   if (data.aum         > 200)  tags.push({ label: "AUM גבוה",      color: "green"  });
+  const meta = ETF_METADATA[sym];
+  if (meta) {
+    if (meta.region)   tags.push({ label: meta.region,   color: "blue" });
+    if (meta.currency) tags.push({ label: meta.currency,  color: "blue" });
+  }
   return tags;
 }
 
@@ -464,10 +487,16 @@ async function renderEtfCompare() {
 function calc() {
   const inp = state.inputs;
   const totalCatExpenses = state.categories.reduce((s, c) => s + (c.type !== "transfer" ? c.amount : 0), 0);
-  const essentialExpenses = inp.monthlyExpenses * inp.essentialExpenseRatio;
-  const emergencyTarget   = essentialExpenses * inp.emergencyFundMonths;
+  const essentialExpenses = (inp.essentialMonthly > 0)
+    ? inp.essentialMonthly
+    : inp.monthlyExpenses * 0.7;
+  const ef3  = essentialExpenses * 3;
+  const ef6  = essentialExpenses * 6;
+  const ef12 = essentialExpenses * 12;
+  const emergencyTarget   = ef6;
   const liquidCash        = inp.availableToWithdraw;
   const liquidGap         = emergencyTarget - liquidCash;
+  const efMonthsCovered   = essentialExpenses > 0 ? liquidCash / essentialExpenses : 0;
   const monthlySurplus    = inp.monthlyIncome - inp.monthlyExpenses;
   const ccPressure        = inp.creditCurrentDue / (inp.monthlyIncome || 1);
   const expenseRatio      = inp.monthlyExpenses / (inp.monthlyIncome || 1);
@@ -485,24 +514,19 @@ function calc() {
     label = "קודם לייצב תזרים";
     explanation = `אופק ההשקעה קצר מדי ל-ETF. מוצע לחסוך את כל העודף (${fmt(monthlySurplus)}) במזומן.`;
     split = "100% חיסכון מזומן";
-  } else if (liquidGap > 0) {
-    // below emergency fund
-    if (liquidGap > monthlySurplus) {
-      cashSav = monthlySurplus;
-      label = "קודם לבנות קרן חירום";
-      explanation = `קרן החירום חסרה ${fmt(liquidGap)}. כל העודף החודשי (${fmt(monthlySurplus)}) יופנה לחיסכון מזומן.`;
-      split = "100% קרן חירום";
-    } else {
-      // close to target — split
-      const etfFraction = inp.riskTolerance === "low" ? 0.2 : inp.riskTolerance === "high" ? 0.5 : 0.3;
-      cashSav = Math.round(monthlySurplus * (1 - etfFraction));
-      etf = Math.round(monthlySurplus * etfFraction);
-      label = "אפשר לשלב חיסכון ו־ETF";
-      explanation = `קרן החירום קרובה ליעד. מוצע פיצול: ${fmt(cashSav)} לחיסכון, ${fmt(etf)} ל-ETF.`;
-      split = `${Math.round((1 - etfFraction) * 100)}% חיסכון / ${Math.round(etfFraction * 100)}% ETF`;
-    }
+  } else if (efMonthsCovered < 3) {
+    cashSav = monthlySurplus;
+    label = "קודם לבנות קרן חירום";
+    explanation = `קרן החירום חסרה ${fmt(liquidGap)}. כל העודף החודשי (${fmt(monthlySurplus)}) יופנה לחיסכון מזומן.`;
+    split = "100% קרן חירום";
+  } else if (efMonthsCovered < 6) {
+    const etfFraction = inp.riskTolerance === "low" ? 0.2 : inp.riskTolerance === "high" ? 0.5 : 0.3;
+    cashSav = Math.round(monthlySurplus * (1 - etfFraction));
+    etf = Math.round(monthlySurplus * etfFraction);
+    label = "אפשר לשלב חיסכון ו־ETF";
+    explanation = `קרן החירום קרובה ליעד. מוצע פיצול: ${fmt(cashSav)} לחיסכון, ${fmt(etf)} ל-ETF.`;
+    split = `${Math.round((1 - etfFraction) * 100)}% חיסכון / ${Math.round(etfFraction * 100)}% ETF`;
   } else {
-    // above emergency fund
     let etfFraction = inp.riskTolerance === "low" ? 0.4 : inp.riskTolerance === "high" ? 0.8 : 0.6;
     if (inp.investmentHorizon === "1-5") etfFraction = Math.min(etfFraction, 0.5);
     cashSav = Math.round(monthlySurplus * (1 - etfFraction));
@@ -516,10 +540,18 @@ function calc() {
   const topCat = [...state.categories].sort((a, b) => b.amount - a.amount)[0];
   const efProgress = Math.min((liquidCash / emergencyTarget) * 100, 100);
 
+  const decisionSteps = [
+    { rule: "תזרים חיובי",          pass: monthlySurplus > 0,  value: fmtSigned(monthlySurplus) },
+    { rule: "קרן חירום ≥ 3 חודשים", pass: efMonthsCovered >= 3, value: efMonthsCovered.toFixed(1) + " חודשים" },
+    { rule: "קרן חירום ≥ 6 חודשים", pass: efMonthsCovered >= 6, value: efMonthsCovered.toFixed(1) + " חודשים" },
+    { rule: "יחס הוצאות < 95%",     pass: expenseRatio < 0.95, value: pct(inp.monthlyExpenses, inp.monthlyIncome) },
+  ];
+
   return {
     essentialExpenses, emergencyTarget, liquidGap, monthlySurplus,
     ccPressure, expenseRatio, savingsRate, totalCatExpenses,
     etf, cashSav, label, explanation, split, efProgress,
+    ef3, ef6, ef12, efMonthsCovered, decisionSteps,
     efOk: liquidCash >= emergencyTarget,
     topCat
   };
@@ -610,6 +642,32 @@ function renderDashboard() {
 
   renderDiagnostic(c);
   renderInterpretation(c);
+
+  // EF milestones
+  const ef3El  = document.getElementById("dash-ef-3");
+  const ef6El  = document.getElementById("dash-ef-6");
+  const ef12El = document.getElementById("dash-ef-12");
+  const efMCEl = document.getElementById("dash-ef-months-covered");
+  const ms3El  = document.getElementById("ef-ms-3");
+  const ms6El  = document.getElementById("ef-ms-6");
+  const ms12El = document.getElementById("ef-ms-12");
+  if (ef3El)  ef3El.textContent  = fmt(c.ef3);
+  if (ef6El)  ef6El.textContent  = fmt(c.ef6);
+  if (ef12El) ef12El.textContent = fmt(c.ef12);
+  if (efMCEl) efMCEl.textContent = c.efMonthsCovered.toFixed(1) + " חודשים מכוסים";
+  if (ms3El)  ms3El.className  = "ef-ms " + (inp.availableToWithdraw >= c.ef3  ? "ef-milestone-reached" : "");
+  if (ms6El)  ms6El.className  = "ef-ms " + (inp.availableToWithdraw >= c.ef6  ? "ef-milestone-reached" : "");
+  if (ms12El) ms12El.className = "ef-ms " + (inp.availableToWithdraw >= c.ef12 ? "ef-milestone-reached" : "");
+
+  // Decision chain
+  const chainEl = document.getElementById("dash-decision-chain");
+  if (chainEl && c.decisionSteps) {
+    chainEl.innerHTML = c.decisionSteps.map(s =>
+      `<div class="decision-step ${s.pass ? "pass" : "fail"}">` +
+      `<span class="ds-rule">${s.rule}</span>` +
+      `<span class="ds-val">${s.value}</span></div>`
+    ).join("");
+  }
 }
 
 function diagRow(label, value, status) {
@@ -714,7 +772,7 @@ function renderInputs() {
     ["inp-locked",         "lockedSavings"],
     ["inp-cc-due",         "creditCurrentDue"],
     ["inp-cc-limit",       "creditLimit"],
-    ["inp-ef-ratio",       "essentialExpenseRatio"]
+    ["inp-ef-essential",   "essentialMonthly"]
   ];
   fields.forEach(([id, key]) => {
     const el = document.getElementById(id);
@@ -736,7 +794,8 @@ function bindInputs() {
     ["inp-locked",    "lockedSavings",    "number"],
     ["inp-cc-due",    "creditCurrentDue", "number"],
     ["inp-cc-limit",  "creditLimit",      "number"],
-    ["inp-ef-ratio",  "essentialExpenseRatio", "number"],
+    ["inp-ef-essential", "essentialMonthly", "number"],
+    ["inp-dca-monthly",  "dcaMonthly",       "number"],
     ["inp-risk",      "riskTolerance",    "text"],
     ["inp-horizon",   "investmentHorizon","text"],
     ["inp-ef-months", "emergencyFundMonths","number"]
@@ -941,6 +1000,8 @@ function renderCharts() {
   destroyChart("chart-bar-cat");
   destroyChart("chart-trend");
   destroyChart("chart-nwsd");
+  destroyChart("chart-save-invest");
+  destroyChart("chart-ef-milestones");
 
   const catNames  = state.categories.map(c => c.name);
   const catAmts   = state.categories.map(c => c.amount);
@@ -1020,6 +1081,49 @@ function renderCharts() {
     document.getElementById("ef-chart-label").textContent =
       `${fmt(inp.availableToWithdraw)} מתוך ${fmt(c.emergencyTarget)} (${pctVal}%)`;
   }
+
+  // Save vs Invest donut
+  const siCanvas = document.getElementById("chart-save-invest");
+  if (siCanvas) {
+    const hasSurplus = c.cashSav > 0 || c.etf > 0;
+    chartInstances["chart-save-invest"] = new Chart(siCanvas, {
+      type: "doughnut",
+      data: {
+        labels: ["חיסכון מזומן", "השקעת ETF"],
+        datasets: [{ data: hasSurplus ? [c.cashSav || 0, c.etf || 0] : [1, 0], backgroundColor: ["#3b82f6", "#22d369"] }]
+      },
+      options: { plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } }, cutout: "65%" }
+    });
+  }
+
+  // EF milestones horizontal bar
+  const efMilCanvas = document.getElementById("chart-ef-milestones");
+  if (efMilCanvas) {
+    const liq = inp.availableToWithdraw;
+    chartInstances["chart-ef-milestones"] = new Chart(efMilCanvas, {
+      type: "bar",
+      data: {
+        labels: ["מזומן זמין", "יעד 3M", "יעד 6M", "יעד 12M"],
+        datasets: [{
+          data: [liq, c.ef3, c.ef6, c.ef12],
+          backgroundColor: [
+            liq >= c.ef6  ? "rgba(34,211,105,0.65)" : "rgba(59,130,246,0.65)",
+            liq >= c.ef3  ? "rgba(34,211,105,0.45)" : "rgba(251,146,60,0.45)",
+            liq >= c.ef6  ? "rgba(34,211,105,0.45)" : "rgba(251,146,60,0.45)",
+            liq >= c.ef12 ? "rgba(34,211,105,0.45)" : "rgba(251,146,60,0.45)"
+          ]
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#6b7280", callback: v => "₪" + Math.round(v / 1000) + "K" }, grid: { color: "rgba(255,255,255,0.05)" } },
+          y: { ticks: { color: "#f0f0fa" }, grid: { color: "rgba(255,255,255,0.05)" } }
+        }
+      }
+    });
+  }
 }
 
 function destroyChart(id) {
@@ -1030,6 +1134,9 @@ function destroyChart(id) {
 function renderETF() {
   const c   = calc();
   const inp = state.inputs;
+
+  const dcaInput = document.getElementById("inp-dca-monthly");
+  if (dcaInput) dcaInput.value = state.inputs.dcaMonthly || 0;
 
   // Existing fields
   document.getElementById("etf-label").textContent         = c.label;
@@ -1106,6 +1213,30 @@ function renderETF() {
         </div>`;
       });
       document.getElementById("scenario-rows").innerHTML = rows.join("");
+    }
+  }
+  renderDCA(c);
+}
+
+/* ─── DCA Calculator ─── */
+function renderDCA(c) {
+  const monthly = (state.inputs.dcaMonthly > 0) ? state.inputs.dcaMonthly : c.etf;
+
+  const displayEl = document.getElementById("dca-monthly-display");
+  const totalEl   = document.getElementById("dca-total-1yr");
+  const rowsEl    = document.getElementById("dca-breakdown-rows");
+
+  if (displayEl) displayEl.textContent = fmt(monthly);
+  if (totalEl)   totalEl.textContent   = fmt(monthly * 12);
+
+  if (rowsEl) {
+    if (monthly <= 0) {
+      rowsEl.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:.6rem;color:var(--text-sub)">אין הקצאת ETF — הזן סכום ידני לסימולציה</td></tr>`;
+    } else {
+      rowsEl.innerHTML = Array.from({ length: 12 }, (_, i) => {
+        const m = i + 1;
+        return `<tr><td>${m}</td><td class="currency">${fmt(monthly)}</td><td class="currency">${fmt(monthly * m)}</td></tr>`;
+      }).join("");
     }
   }
 }

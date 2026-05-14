@@ -984,3 +984,42 @@ tr:hover td { background: rgba(255,255,255,0.025); }
 }
 .etfc-demo-notice.demo   { background: rgba(59,130,246,0.1);  color: var(--accent); border: 1px solid rgba(59,130,246,0.3); }
 .etfc-demo-notice.failed { background: rgba(251,146,60,0.1);  color: var(--orange); border: 1px solid rgba(251,146,60,0.3); }
+
+/* ─── Decision chain ─── */
+.decision-chain { margin-top: .6rem; }
+.decision-step {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .78rem; padding: .3rem .5rem; border-radius: 8px;
+  margin-bottom: .25rem; background: rgba(255,255,255,0.025);
+}
+.decision-step .ds-rule { color: var(--text-sub); }
+.decision-step .ds-val  { font-weight: 600; direction: ltr; unicode-bidi: isolate; }
+.decision-step.pass { border-right: 3px solid var(--green); }
+.decision-step.fail { border-right: 3px solid var(--orange); }
+
+/* ─── EF Milestones ─── */
+.ef-milestones {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: .45rem; margin: .5rem 0;
+}
+.ef-ms {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+  border-radius: 10px; padding: .5rem .55rem; text-align: center;
+}
+.ef-ms-label { font-size: .65rem; color: var(--text-sub); display: block; margin-bottom: .15rem; }
+.ef-ms-val   { font-size: .9rem; font-weight: 700; }
+.ef-milestone-reached { border-color: rgba(34,211,105,0.4); }
+.ef-milestone-reached .ef-ms-label { color: var(--green); }
+
+/* ─── DCA table override ─── */
+.dca-table-wrap table { min-width: unset; }
+
+/* ─── ETF manual data label ─── */
+.etfc-manual-label {
+  font-size: .72rem; font-weight: 600;
+  color: var(--orange);
+  background: rgba(251,146,60,0.06);
+  border: 1px solid rgba(251,146,60,0.2);
+  border-radius: var(--radius-sm);
+  padding: .38rem .65rem;
+  margin-bottom: .65rem;
+}
