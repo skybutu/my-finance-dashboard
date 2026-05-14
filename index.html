@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>לוח הפיננסים שלי</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<header id="app-header">
+  <div>
+    <div class="logo">💳 לוח הפיננסים</div>
+    <div class="sub">מבוסס על guy_expense_etf_app_base.xlsx</div>
+  </div>
+</header>
+
+<!-- ══ Main content ══ -->
+<main id="main-content">
+
+  <!-- ── Dashboard ── -->
+  <section id="screen-dashboard">
+    <p class="section-title">לוח בקרה — מאי/יוני 2026</p>
+
+    <!-- מצב החודש -->
+    <div class="card">
+      <p class="card-section-title">מצב החודש</p>
+      <div class="cards-grid-2">
+        <div class="kpi-item">
+          <div class="card-label">הכנסה חודשית</div>
+          <div class="card-value currency positive" id="dash-income">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="card-label">הוצאות חודשיות</div>
+          <div class="card-value currency negative" id="dash-expenses">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="card-label">עודף / גירעון חודשי</div>
+          <div class="card-value currency" id="dash-surplus">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="card-label">יחס הוצאות / הכנסה</div>
+          <div class="card-value percent" id="dash-expense-ratio">—</div>
+        </div>
+      </div>
+      <div id="cashflow-status-line" class="cashflow-status">—</div>
+    </div>
+
+    <!-- נזילות ונכסים -->
+    <div class="card">
+      <p class="card-section-title">נזילות ונכסים</p>
+      <div class="cards-grid-2">
+        <div class="kpi-item">
+          <div class="card-label">יתרת חשבון בנק</div>
+          <div class="card-value currency" id="dash-balance">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="card-label">מזומן נזיל</div>
+          <div class="card-value currency" id="dash-withdraw">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="card-label">חיסכון נעול / פיקדון</div>
+          <div class="card-value currency" id="dash-locked">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="card-label">חוב כרטיס אשראי MAX</div>
+          <div class="card-value currency negative" id="dash-cc">—</div>
+        </div>
+      </div>
+      <p class="liquidity-note">נזילות קיימת עוזרת לקרן חירום, אבל השקעה חודשית מומלצת רק כאשר התזרים החודשי יציב או חיובי.</p>
+    </div>
+
+    <!-- קרן חירום -->
+    <div class="card">
+      <p class="card-section-title">קרן חירום</p>
+      <div class="ef-row">
+        <div>
+          <div class="card-label">יעד</div>
+          <div class="currency" id="dash-ef-target">—</div>
+        </div>
+        <div>
+          <div class="card-label">נזיל כרגע</div>
+          <div class="currency" id="dash-ef-liquid">—</div>
+        </div>
+        <div>
+          <div class="card-label">חסר / עודף</div>
+          <div class="number" id="dash-ef-gap">—</div>
+        </div>
+      </div>
+      <div class="progress-track" style="margin-top:.55rem;">
+        <div class="progress-fill" id="ef-progress-bar" style="width:0%">0%</div>
+      </div>
+      <div id="ef-status-text" class="ef-status">—</div>
+    </div>
+
+    <!-- אבחון החודש -->
+    <div class="card">
+      <p class="card-section-title">אבחון החודש</p>
+      <div id="diagnostic-rows"></div>
+    </div>
+
+    <!-- המלצה חודשית -->
+    <div class="card">
+      <div class="card-label">המלצה חודשית</div>
+      <div id="dash-label" class="rec-label">—</div>
+      <div style="margin-top:.6rem;display:flex;gap:1.5rem;flex-wrap:wrap;">
+        <div>
+          <div class="card-label">השקעת ETF מוצעת</div>
+          <div class="card-value currency" id="dash-etf">—</div>
+        </div>
+        <div>
+          <div class="card-label">חיסכון מזומן מוצע</div>
+          <div class="card-value currency" id="dash-cashsav">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- פירוש פיננסי -->
+    <div class="card">
+      <p class="section-title" style="font-size:.9rem;margin-bottom:.6rem;">פירוש פיננסי</p>
+      <ul id="interpretation-list"></ul>
+    </div>
+
+    <!-- Data tools -->
+    <div class="action-row">
+      <button class="btn btn-outline btn-sm" id="btn-export-csv">ייצוא עסקאות CSV</button>
+      <button class="btn btn-danger btn-sm" id="btn-reset-all">איפוס לנתוני Excel</button>
+    </div>
+  </section>
+
+  <!-- ── Inputs ── -->
+  <section id="screen-inputs" class="hidden">
+    <p class="section-title">עריכת נתוני קלט</p>
+
+    <div class="card">
+      <h2>הכנסה ומזומן</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>הכנסה חודשית (₪)</label>
+          <input type="number" id="inp-income" min="0" />
+        </div>
+        <div class="form-group">
+          <label>הוצאות חודשיות (₪)</label>
+          <input type="number" id="inp-expenses" min="0" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>יתרת חשבון בנק (₪)</label>
+          <input type="number" id="inp-checking" />
+        </div>
+        <div class="form-group">
+          <label>זמין למשיכה / מזומן נזיל (₪)</label>
+          <input type="number" id="inp-withdraw" min="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>חיסכון נעול / פיקדון (₪)</label>
+        <input type="number" id="inp-locked" min="0" />
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>כרטיס אשראי MAX</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>חיוב נוכחי (₪)</label>
+          <input type="number" id="inp-cc-due" min="0" />
+        </div>
+        <div class="form-group">
+          <label>מסגרת אשראי (₪)</label>
+          <input type="number" id="inp-cc-limit" min="0" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>הגדרות המלצה</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>סיבולת סיכון</label>
+          <select id="inp-risk">
+            <option value="low">נמוכה</option>
+            <option value="medium">בינונית</option>
+            <option value="high">גבוהה</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>אופק השקעה</label>
+          <select id="inp-horizon">
+            <option value="<1">פחות משנה</option>
+            <option value="1-5">1–5 שנים</option>
+            <option value="5+">5+ שנים</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>יעד קרן חירום (חודשים)</label>
+          <select id="inp-ef-months">
+            <option value="3">3 חודשים</option>
+            <option value="6">6 חודשים</option>
+            <option value="12">12 חודשים</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>יחס הוצאות בסיסיות (0–1)</label>
+          <input type="number" id="inp-ef-ratio" min="0" max="1" step="0.05" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Data management section -->
+    <div class="card">
+      <p class="section-title" style="font-size:.9rem;margin-bottom:.6rem;">ניהול נתונים</p>
+      <p class="small" style="margin-bottom:.75rem;">גיבוי, שחזור ואיפוס נתוני האפליקציה</p>
+      <div class="action-row" style="margin-bottom:.75rem;flex-wrap:wrap;">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+          ייבוא JSON <input type="file" id="btn-import-json" accept=".json" class="hidden" />
+        </label>
+        <button class="btn btn-outline btn-sm" id="btn-export-json">ייצוא JSON</button>
+        <button class="btn btn-danger btn-sm" id="btn-reset-inputs">איפוס נתונים</button>
+      </div>
+      <div id="autosave-status" class="autosave-status">נשמר אוטומטית במכשיר</div>
+    </div>
+  </section>
+
+  <!-- ── Categories ── -->
+  <section id="screen-categories" class="hidden">
+    <p class="section-title">קטגוריות הוצאות</p>
+
+    <div class="action-row">
+      <input type="text" id="cat-search" placeholder="חיפוש קטגוריה..." style="max-width:200px;" />
+      <button class="btn btn-danger btn-sm" id="btn-reset-cats">איפוס לברירת מחדל</button>
+    </div>
+
+    <div class="card" style="padding:.6rem;">
+      <div id="cat-vs-expenses" class="mismatch-warn">—</div>
+      <div class="small">סה"כ קטגוריות: <strong id="cat-total">—</strong></div>
+    </div>
+
+    <!-- Add new category -->
+    <div class="card">
+      <h3>הוספת קטגוריה</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>שם קטגוריה</label>
+          <input type="text" id="new-cat-name" placeholder="שם..." />
+        </div>
+        <div class="form-group">
+          <label>סכום (₪)</label>
+          <input type="number" id="new-cat-amount" min="0" placeholder="0" />
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:flex-end;">
+        <div class="form-group" style="flex:1;margin:0;">
+          <label>סוג</label>
+          <select id="new-cat-type">
+            <option value="need">צורך</option>
+            <option value="want">רצון</option>
+            <option value="savings">חיסכון</option>
+            <option value="investment">השקעה</option>
+            <option value="debt">חוב</option>
+            <option value="transfer">העברה</option>
+            <option value="other">אחר</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-add-cat" style="margin-bottom:0;white-space:nowrap;">+ הוסף</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>שם</th>
+            <th>סכום ₪</th>
+            <th>% מסה"כ</th>
+            <th>% מהכנסה</th>
+            <th>סוג</th>
+            <th>מקור</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="cat-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Transactions ── -->
+  <section id="screen-transactions" class="hidden">
+    <p class="section-title">עסקאות</p>
+
+    <!-- Filters -->
+    <div class="action-row">
+      <input type="text" id="tx-search" placeholder="חיפוש..." style="flex:1;min-width:80px;" />
+      <input type="month" id="tx-filter-month" style="max-width:150px;" />
+      <select id="tx-filter-cat" style="max-width:130px;"><option value="">כל הקטגוריות</option></select>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-outline btn-sm" id="tx-sort-date">מיון לפי תאריך ⇅</button>
+      <button class="btn btn-outline btn-sm" id="tx-sort-amount">מיון לפי סכום ⇅</button>
+    </div>
+
+    <!-- Add transaction -->
+    <div class="card">
+      <h3>עסקה חדשה</h3>
+      <div class="form-row">
+        <div class="form-group"><label>תאריך</label><input type="date" id="tx-new-date" /></div>
+        <div class="form-group"><label>תיאור</label><input type="text" id="tx-new-desc" placeholder="תיאור..." /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>סכום (₪ שלילי=הוצאה)</label><input type="number" id="tx-new-amount" placeholder="0" /></div>
+        <div class="form-group">
+          <label>סוג</label>
+          <select id="tx-new-type">
+            <option value="expense">הוצאה</option>
+            <option value="income">הכנסה</option>
+            <option value="transfer">העברה</option>
+            <option value="debt">חוב</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>מקור</label>
+          <select id="tx-new-source">
+            <option value="Pepper">Pepper</option>
+            <option value="MAX">MAX</option>
+            <option value="Manual">ידני</option>
+          </select>
+        </div>
+        <div class="form-group"><label>קטגוריה</label><input type="text" id="tx-new-category" placeholder="קטגוריה..." /></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btn-add-tx">+ הוסף עסקה</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>תאריך</th>
+            <th>תיאור</th>
+            <th>סכום</th>
+            <th>מקור</th>
+            <th>קטגוריה</th>
+            <th>סוג</th>
+            <th>הערות</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tx-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Charts ── -->
+  <section id="screen-charts" class="hidden">
+    <p class="section-title">גרפים</p>
+
+    <div class="chart-card">
+      <h3>התפלגות הוצאות לפי קטגוריה</h3>
+      <canvas id="chart-donut-cat"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>סכום לפי קטגוריה</h3>
+      <canvas id="chart-bar-cat"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>מגמת חיוב כרטיס חודשית</h3>
+      <canvas id="chart-trend"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>צרכים / רצונות / חיסכון</h3>
+      <canvas id="chart-nwsd"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>התקדמות קרן חירום</h3>
+      <div class="progress-track" style="height:28px;">
+        <div class="progress-fill" id="ef-chart-bar" style="width:0%;font-size:.8rem;">0%</div>
+      </div>
+      <p class="small" id="ef-chart-label" style="margin-top:.4rem;"></p>
+    </div>
+  </section>
+
+  <!-- ── ETF ── -->
+  <section id="screen-etf" class="hidden">
+    <p class="section-title">המלצת ETF וחיסכון</p>
+
+    <!-- החלטת החודש -->
+    <div class="card">
+      <p class="card-section-title">החלטת החודש</p>
+      <div class="etf-decision-box">
+        <div class="decision-title">החלטה</div>
+        <div class="decision-value" id="etf-decision-value">—</div>
+        <div class="decision-title">סיבה</div>
+        <div class="decision-reason" id="etf-decision-reason">—</div>
+        <div class="decision-action" id="etf-decision-action">—</div>
+      </div>
+    </div>
+
+    <div class="card text-center">
+      <div id="etf-label" class="etf-label-big">—</div>
+      <p id="etf-explanation" style="font-size:.88rem;line-height:1.6;color:var(--text);margin-top:.5rem;"></p>
+    </div>
+
+    <div class="etf-grid">
+      <div class="etf-item">
+        <label>השקעת ETF חודשית</label>
+        <div class="val currency positive" id="etf-etf-amt">—</div>
+      </div>
+      <div class="etf-item">
+        <label>חיסכון מזומן חודשי</label>
+        <div class="val currency" id="etf-cash-amt">—</div>
+      </div>
+      <div class="etf-item">
+        <label>פיצול מוצע</label>
+        <div class="val number" style="font-size:1rem;" id="etf-split">—</div>
+      </div>
+      <div class="etf-item">
+        <label>עודף / גירעון חודשי</label>
+        <div class="val currency" id="etf-surplus">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>פרטי חישוב</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+        <div>
+          <div class="card-label">פער קרן חירום</div>
+          <div style="font-weight:700;" id="etf-ef-gap">—</div>
+        </div>
+        <div>
+          <div class="card-label">לחץ אשראי (חיוב / הכנסה)</div>
+          <div class="percent" style="font-weight:700;" id="etf-cc-pressure">—</div>
+        </div>
+        <div>
+          <div class="card-label">יחס הוצאות / הכנסה</div>
+          <div class="percent" style="font-weight:700;" id="etf-expense-ratio">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rules reference -->
+    <div class="card">
+      <h2>כללי ההחלטה</h2>
+      <ul style="list-style:disc;padding-right:1.2rem;font-size:.82rem;line-height:1.8;color:var(--text-sub);">
+        <li>הוצאות > הכנסה → ייצוב תזרים קודם, אפס השקעה</li>
+        <li>מזומן נזיל &lt; קרן חירום → חיסכון מזומן קודם</li>
+        <li>מזומן קרוב ליעד → פיצול בין חיסכון ל-ETF</li>
+        <li>מזומן מעל יעד + אופק 5+ שנים → חשיפה גבוהה ל-ETF</li>
+        <li>אופק &lt; שנה → מזומן בלבד, לא ETF</li>
+        <li>סיבולת סיכון נמוכה → הפחתת הקצאת ETF</li>
+      </ul>
+    </div>
+
+    <!-- כמה צריך לצמצם -->
+    <div class="card">
+      <p class="card-section-title">כמה צריך לצמצם כדי להתאזן?</p>
+      <p id="etf-reduction-text" style="font-size:.88rem;line-height:1.6;">—</p>
+    </div>
+
+    <!-- סימולציית קיצוץ הוצאות — shown only when deficit exists -->
+    <div id="etf-scenario-section" class="card hidden">
+      <p class="card-section-title">סימולציית קיצוץ הוצאות</p>
+      <p class="small" style="margin-bottom:.6rem;">מה יקרה לתזרים אם תקצץ הוצאות?</p>
+      <div id="scenario-rows"></div>
+    </div>
+
+    <div class="disclaimer">
+      ⚠️ המידע באפליקציה הוא כלי חישוב וחינוך פיננסי בלבד, לא ייעוץ השקעות אישי. אין כאן נתוני שוק חיים, מחירי ETF עדכניים, עמלות ברוקר או מסים בפועל.
+    </div>
+  </section>
+
+</main>
+
+<!-- ══ Bottom Nav ══ -->
+<nav id="bottom-nav">
+  <button class="nav-btn active" data-screen="dashboard">
+    <span class="icon">🏠</span>
+    <span>בית</span>
+  </button>
+  <button class="nav-btn" data-screen="inputs">
+    <span class="icon">✏️</span>
+    <span>קלט</span>
+  </button>
+  <button class="nav-btn" data-screen="categories">
+    <span class="icon">📂</span>
+    <span>קטגוריות</span>
+  </button>
+  <button class="nav-btn" data-screen="transactions">
+    <span class="icon">💸</span>
+    <span>עסקאות</span>
+  </button>
+  <button class="nav-btn" data-screen="charts">
+    <span class="icon">📊</span>
+    <span>גרפים</span>
+  </button>
+  <button class="nav-btn" data-screen="etf">
+    <span class="icon">📈</span>
+    <span>ETF</span>
+  </button>
+</nav>
+
+<!-- ══ Transaction Edit Modal ══ -->
+<div id="tx-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>עריכת עסקה</h2>
+    <input type="hidden" id="tx-edit-id" />
+    <div class="form-row">
+      <div class="form-group"><label>תאריך</label><input type="date" id="tx-edit-date" /></div>
+      <div class="form-group"><label>תיאור</label><input type="text" id="tx-edit-desc" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>סכום</label><input type="number" id="tx-edit-amount" /></div>
+      <div class="form-group">
+        <label>סוג</label>
+        <select id="tx-edit-type">
+          <option value="expense">הוצאה</option>
+          <option value="income">הכנסה</option>
+          <option value="transfer">העברה</option>
+          <option value="debt">חוב</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>מקור</label>
+        <select id="tx-edit-source">
+          <option value="Pepper">Pepper</option>
+          <option value="MAX">MAX</option>
+          <option value="Manual">ידני</option>
+        </select>
+      </div>
+      <div class="form-group"><label>קטגוריה</label><input type="text" id="tx-edit-category" /></div>
+    </div>
+    <div class="form-group"><label>הערות</label><input type="text" id="tx-edit-notes" /></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="btn-cancel-tx-edit">ביטול</button>
+      <button class="btn btn-primary" id="btn-save-tx-edit">שמור</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
