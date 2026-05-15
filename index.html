@@ -249,52 +249,66 @@
   <!-- ══ CATEGORIES ══ -->
   <section id="screen-categories" class="hidden">
     <h2 class="section-title">קטגוריות הוצאה</h2>
-    <div class="action-row">
-      <input type="text" id="cat-search" placeholder="חיפוש קטגוריה..." />
-    </div>
-    <div class="card mb-2">
-      <div class="card-label">סה"כ קטגוריות</div>
-      <div class="card-value currency" id="cat-total">—</div>
-      <div id="cat-vs-expenses" class="mismatch-ok">—</div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>שם</th><th>סכום</th><th>% מסה"כ</th><th>% מהכנסה</th><th>סוג</th><th>מקור</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="cat-tbody"></tbody>
-      </table>
-    </div>
-    <div class="card" style="margin-top:.75rem;">
-      <div class="card-section-title">הוסף קטגוריה</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>שם</label>
-          <input type="text" id="new-cat-name" placeholder="שם הקטגוריה" />
+
+    <!-- Mobile: horizontal scrollable chips (hidden on desktop) -->
+    <div id="cat-chips-bar" class="cat-chips-bar"></div>
+
+    <div class="cat-layout">
+
+      <!-- Desktop sidebar (hidden on mobile) -->
+      <aside id="cat-sidebar" class="cat-sidebar"></aside>
+
+      <!-- Main content: all existing IDs unchanged -->
+      <div class="cat-main">
+        <div class="action-row">
+          <input type="text" id="cat-search" placeholder="חיפוש קטגוריה..." />
         </div>
-        <div class="form-group">
-          <label>סכום (₪)</label>
-          <input type="number" id="new-cat-amount" placeholder="0" />
+        <div class="card mb-2">
+          <div class="card-label">סה"כ קטגוריות</div>
+          <div class="card-value currency" id="cat-total">—</div>
+          <div id="cat-vs-expenses" class="mismatch-ok">—</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>שם</th><th>סכום</th><th>% מסה"כ</th><th>% מהכנסה</th><th>סוג</th><th>מקור</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="cat-tbody"></tbody>
+          </table>
+        </div>
+        <div class="card" style="margin-top:.75rem;">
+          <div class="card-section-title">הוסף קטגוריה</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>שם</label>
+              <input type="text" id="new-cat-name" placeholder="שם הקטגוריה" />
+            </div>
+            <div class="form-group">
+              <label>סכום (₪)</label>
+              <input type="number" id="new-cat-amount" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>סוג</label>
+            <select id="new-cat-type">
+              <option value="need">צורך</option>
+              <option value="want">רצון</option>
+              <option value="savings">חיסכון</option>
+              <option value="investment">השקעה</option>
+              <option value="debt">חוב</option>
+              <option value="transfer">העברה</option>
+              <option value="other">אחר</option>
+            </select>
+          </div>
+          <div class="action-row">
+            <button class="btn btn-primary btn-sm" id="btn-add-cat">+ הוסף</button>
+            <button class="btn btn-outline btn-sm" id="btn-reset-cats">אפס לברירת מחדל</button>
+          </div>
         </div>
       </div>
-      <div class="form-group">
-        <label>סוג</label>
-        <select id="new-cat-type">
-          <option value="need">צורך</option>
-          <option value="want">רצון</option>
-          <option value="savings">חיסכון</option>
-          <option value="investment">השקעה</option>
-          <option value="debt">חוב</option>
-          <option value="transfer">העברה</option>
-          <option value="other">אחר</option>
-        </select>
-      </div>
-      <div class="action-row">
-        <button class="btn btn-primary btn-sm" id="btn-add-cat">+ הוסף</button>
-        <button class="btn btn-outline btn-sm" id="btn-reset-cats">אפס לברירת מחדל</button>
-      </div>
+
     </div>
   </section>
 

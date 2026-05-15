@@ -824,7 +824,8 @@ function bindInputs() {
 }
 
 /* ─── Categories ─── */
-let catFilter = "";
+let catFilter  = "";
+let activeCatId = null; // null = all categories
 
 function renderCategories() {
   const inp = state.inputs;
@@ -843,7 +844,11 @@ function renderCategories() {
     ? state.categories.filter(c => c.name.includes(catFilter))
     : state.categories;
 
-  tbody.innerHTML = filtered.map(cat => `
+  const displayed = activeCatId !== null
+    ? filtered.filter(c => c.id === activeCatId)
+    : filtered;
+
+  tbody.innerHTML = displayed.map(cat => `
     <tr>
       <td><input class="inline-edit" value="${cat.name}" onchange="updateCat(${cat.id},'name',this.value)" /></td>
       <td><input class="inline-edit num" type="number" value="${cat.amount}" onchange="updateCat(${cat.id},'amount',parseFloat(this.value)||0)" /></td>
@@ -859,6 +864,8 @@ function renderCategories() {
       <td>${cat.source}</td>
       <td><button class="btn-icon btn-del" onclick="deleteCat(${cat.id})">✕</button></td>
     </tr>`).join("");
+
+  renderCatSidebar();
 }
 
 function typeLabelHe(t) {
@@ -887,8 +894,63 @@ function addCategory() {
 }
 
 function resetCategories() {
+  activeCatId = null;
   state.categories = JSON.parse(JSON.stringify(DEFAULTS.categories));
   saveState(); renderCategories();
+}
+
+function selectCat(id) {
+  activeCatId = id;
+  renderCategories();
+}
+
+function renderCatSidebar() {
+  const sidebarEl = document.getElementById("cat-sidebar");
+  const chipsEl   = document.getElementById("cat-chips-bar");
+  if (!sidebarEl && !chipsEl) return;
+
+  const total  = state.categories.reduce((s, c) => s + c.amount, 0);
+  const maxAmt = Math.max(...state.categories.map(c => c.amount), 1);
+
+  const allItemHtml = `
+    <div class="cat-si-item ${activeCatId === null ? "active" : ""}" onclick="selectCat(null)">
+      <div class="cat-si-top">
+        <span class="cat-si-name">כל הקטגוריות</span>
+        <span class="cat-si-pct">100%</span>
+      </div>
+      <span class="cat-si-amount currency">${fmt(total)}</span>
+      <div class="cat-si-bar-track"><div class="cat-si-bar-fill" style="width:100%"></div></div>
+    </div>`;
+
+  const catItems = state.categories.map(cat => {
+    const pctOfTotal = total > 0 ? Math.round(cat.amount / total * 100) : 0;
+    const barWidth   = Math.round(cat.amount / maxAmt * 100);
+    return `
+      <div class="cat-si-item ${activeCatId === cat.id ? "active" : ""}" onclick="selectCat(${cat.id})">
+        <div class="cat-si-top">
+          <span class="cat-si-name">${cat.name}</span>
+          <span class="cat-si-pct">${pctOfTotal}%</span>
+        </div>
+        <span class="cat-si-amount currency">${fmt(cat.amount)}</span>
+        <div class="cat-si-bar-track"><div class="cat-si-bar-fill" style="width:${barWidth}%"></div></div>
+      </div>`;
+  }).join("");
+
+  if (sidebarEl) {
+    sidebarEl.innerHTML = `
+      <div class="cat-sidebar-inner">
+        <div class="cat-sidebar-title">קטגוריות</div>
+        ${allItemHtml}${catItems}
+      </div>`;
+  }
+
+  if (chipsEl) {
+    chipsEl.innerHTML = [
+      `<button class="cat-chip-btn ${activeCatId === null ? "active" : ""}" onclick="selectCat(null)">כל הקטגוריות</button>`,
+      ...state.categories.map(cat =>
+        `<button class="cat-chip-btn ${activeCatId === cat.id ? "active" : ""}" onclick="selectCat(${cat.id})">${cat.name}</button>`)
+    ].join("");
+  }
 }
 
 /* ─── Transactions ─── */
