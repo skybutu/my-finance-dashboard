@@ -15,6 +15,8 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">דלגו לתוכן</a>
+
 <noscript>
   <div style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:2rem;background:#09090f;color:#f0f0fa;text-align:center;font-family:-apple-system,'Segoe UI','Helvetica Neue',Arial,sans-serif;line-height:1.7;">
     <div style="max-width:420px;">
@@ -25,7 +27,7 @@
   </div>
 </noscript>
 
-<header id="app-header">
+<header id="app-header" role="banner">
   <div class="header-brand">
     <div class="logo">לוח הפיננסים</div>
     <div class="sub">ניהול כספים אישי</div>
@@ -212,19 +214,21 @@
       <div class="form-row">
         <div class="form-group">
           <label for="inp-risk">סיבולת סיכון</label>
-          <select id="inp-risk">
+          <select id="inp-risk" aria-describedby="hint-risk">
             <option value="low">נמוכה</option>
             <option value="medium">בינונית</option>
             <option value="high">גבוהה</option>
           </select>
+          <div id="hint-risk" class="form-hint">משפיע על אחוז העודף החודשי המופנה ל-ETF (נמוכה ≈ פחות חשיפה, גבוהה ≈ יותר).</div>
         </div>
         <div class="form-group">
           <label for="inp-horizon">אופק השקעה</label>
-          <select id="inp-horizon">
+          <select id="inp-horizon" aria-describedby="hint-horizon">
             <option value="<1">פחות משנה</option>
             <option value="1-5">1–5 שנים</option>
             <option value="5+">5+ שנים</option>
           </select>
+          <div id="hint-horizon" class="form-hint">אופק קצר מנטרל המלצת ETF; אופק 1–5 שנים מגביל את החשיפה ל-50%.</div>
         </div>
       </div>
       <div class="form-row">
@@ -240,10 +244,11 @@
       </div>
       <div class="form-group">
         <label for="inp-etf-source">מקור נתוני ETF להשוואה</label>
-        <select id="inp-etf-source">
+        <select id="inp-etf-source" aria-describedby="hint-etf-source">
           <option value="demo">הדגמה (נתונים קבועים)</option>
           <option value="live">חי (Yahoo Finance — ייתכנו שגיאות CORS)</option>
         </select>
+        <div id="hint-etf-source" class="form-hint">במצב "חי" הנתונים נמשכים מ-Yahoo Finance — חלק מהדפדפנים עשויים לחסום זאת מטעמי CORS.</div>
       </div>
     </div>
 
@@ -570,7 +575,7 @@
 </main>
 
 <!-- ══ BOTTOM NAV ══ -->
-<nav id="bottom-nav">
+<nav id="bottom-nav" role="navigation" aria-label="ניווט ראשי">
   <button class="nav-btn active" data-screen="dashboard"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></span>בית</button>
   <button class="nav-btn" data-screen="inputs"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="18" r="2"/></svg></span>קלט</button>
   <button class="nav-btn" data-screen="categories"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>קטגוריות</button>
@@ -581,9 +586,9 @@
 </nav>
 
 <!-- ══ TX EDIT MODAL ══ -->
-<div id="tx-modal" class="modal-overlay hidden">
+<div id="tx-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
   <div class="modal-box">
-    <h2>עריכת עסקה</h2>
+    <h2 id="tx-modal-title">עריכת עסקה</h2>
     <input type="hidden" id="tx-edit-id" />
     <div class="form-row">
       <div class="form-group">
@@ -629,7 +634,7 @@
   </div>
 </div>
 
-<footer id="app-footer">לוח הפיננסים · נתונים מקומיים בלבד · לא ייעוץ השקעות</footer>
+<footer id="app-footer" role="contentinfo">לוח הפיננסים · נתונים מקומיים בלבד · לא ייעוץ השקעות</footer>
 
 <div id="nav-backdrop" class="nav-backdrop"></div>
 

@@ -362,14 +362,15 @@ tr:hover td { background: rgba(255,255,255,0.025); }
 .etf-item label { font-size: .72rem; color: var(--text-sub); }
 .etf-item .val  { font-size: 1.3rem; font-weight: 700; margin-top: .2rem; }
 .disclaimer {
-  font-size: .72rem;
-  color: var(--text-sub);
-  background: rgba(255,255,255,0.02);
-  border: 1px solid var(--glass-border);
+  font-size: .76rem;
+  color: rgba(240,240,250,0.78);
+  background: rgba(251,146,60,0.05);
+  border: 1px solid rgba(251,146,60,0.22);
+  border-right: 3px solid var(--orange);
   border-radius: var(--radius-sm);
-  padding: .65rem .85rem;
+  padding: .7rem .9rem;
   margin-top: 1rem;
-  line-height: 1.65;
+  line-height: 1.7;
 }
 
 /* ─── Mismatch warning ─── */
@@ -1222,6 +1223,116 @@ textarea:focus-visible {
   font-size: .95rem; font-weight: 600; color: var(--text); margin-bottom: .25rem;
 }
 .empty-state .empty-hint { font-size: .78rem; opacity: .85; }
+
+/* ─── Skip link ─── */
+.skip-link {
+  position: fixed;
+  top: 8px; right: 8px;
+  z-index: 9999;
+  padding: .6rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  transform: translateY(-200%);
+  transition: transform .2s cubic-bezier(.4,0,.2,1);
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ─── Disabled state for buttons / interactive controls ─── */
+button:disabled,
+.btn:disabled,
+.btn-icon:disabled,
+[disabled] {
+  opacity: .45;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* ─── Form hint text under selects ─── */
+.form-hint {
+  font-size: .72rem;
+  color: var(--text-sub);
+  margin-top: .35rem;
+  line-height: 1.5;
+}
+
+/* ─── Recommendation bullets ─── */
+.rec-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.rec-bullets li {
+  position: relative;
+  padding: .4rem .65rem .4rem 1.6rem;
+  font-size: .85rem;
+  line-height: 1.55;
+  color: var(--text);
+  background: rgba(255,255,255,0.025);
+  border-radius: var(--radius-sm);
+  border-right: 3px solid rgba(59,130,246,0.45);
+}
+.rec-bullets li::before {
+  content: "";
+  position: absolute;
+  top: .85rem; left: .65rem;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ─── Decision step glyph (pass/fail) ─── */
+.decision-step .ds-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: .72rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-left: .4rem;
+}
+.decision-step.pass .ds-icon { background: rgba(34,211,105,0.18);  color: var(--green); }
+.decision-step.fail .ds-icon { background: rgba(251,146,60,0.18);  color: var(--orange); }
+
+/* ─── Chart empty overlay (inside chart-card) ─── */
+.chart-empty {
+  text-align: center;
+  padding: 2.2rem 1rem;
+  color: var(--text-sub);
+  font-size: .85rem;
+  line-height: 1.65;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--radius-sm);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+}
+.chart-empty-title { font-size: .95rem; font-weight: 600; color: var(--text); }
+.chart-empty-hint  { font-size: .78rem; opacity: .85; }
+
+/* ─── Hero KPI polish ─── */
+.hero-eyebrow { letter-spacing: 1.2px; }
+.hero-kpi-value.negative { color: var(--red); font-weight: 800; }
+.hero-kpi-value.positive { color: var(--green); }
 
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {

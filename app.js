@@ -137,6 +137,27 @@ function pct(n, d) {
 }
 function uid() { return Date.now() + Math.random().toString(36).slice(2); }
 
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function renderExplanationBullets(elId, text) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const raw = String(text || "").trim();
+  if (!raw) { el.innerHTML = ""; return; }
+  const parts = raw.split(/\.\s+/).map(p => p.replace(/\.$/, "").trim()).filter(Boolean);
+  if (parts.length <= 1) {
+    el.textContent = raw;
+    return;
+  }
+  el.innerHTML = '<ul class="rec-bullets">' +
+    parts.map(p => `<li>${escapeHtml(p)}</li>`).join("") +
+    "</ul>";
+}
+
 /* ─── ETF Market Data ─── */
 const ETF_METADATA = {
   VTI:  { name: "Vanguard Total Stock Market ETF",    expenseRatio: 0.03, return1y: 24.8,  return3y: 9.1,  return5y: 13.8, volatility: 14.9, dividendYield: 1.4, aum: 390, diversification: 92, demoPrice: 238.45, demoDailyChange:  0.42, category: "US Total Market",          region: "US",            currency: "USD",   dcaSuitability: 95, longTermScore: 95 },
@@ -693,6 +714,7 @@ function renderDashboard() {
   if (chainEl && c.decisionSteps) {
     chainEl.innerHTML = c.decisionSteps.map(s =>
       `<div class="decision-step ${s.pass ? "pass" : "fail"}">` +
+      `<span class="ds-icon" aria-hidden="true">${s.pass ? "✓" : "✗"}</span>` +
       `<span class="ds-rule">${s.rule}</span>` +
       `<span class="ds-val">${s.value}</span></div>`
     ).join("");
@@ -1094,9 +1116,12 @@ function deleteTx(id) {
   saveState(); renderTransactions();
 }
 
+let _lastModalOpener = null;
+
 function openEditTx(id) {
   const tx = state.transactions.find(t => t.id === id);
   if (!tx) return;
+  _lastModalOpener = document.activeElement;
   document.getElementById("tx-edit-id").value          = tx.id;
   document.getElementById("tx-edit-date").value        = tx.date;
   document.getElementById("tx-edit-desc").value        = tx.description;
@@ -1106,6 +1131,11 @@ function openEditTx(id) {
   document.getElementById("tx-edit-type").value        = tx.type;
   document.getElementById("tx-edit-notes").value       = tx.notes || "";
   document.getElementById("tx-modal").classList.remove("hidden");
+  requestAnimationFrame(() => {
+    const f = document.getElementById("tx-edit-date");
+    if (f) f.focus();
+  });
+  refreshTxModalSaveButton();
 }
 
 function saveTxEdit() {
@@ -1140,6 +1170,25 @@ function addNewTx() {
 
 function closeTxModal() {
   document.getElementById("tx-modal").classList.add("hidden");
+  const opener = _lastModalOpener;
+  _lastModalOpener = null;
+  if (opener && typeof opener.focus === "function") {
+    requestAnimationFrame(() => opener.focus());
+  }
+}
+
+function isTxModalOpen() {
+  const m = document.getElementById("tx-modal");
+  return m && !m.classList.contains("hidden");
+}
+
+function refreshTxModalSaveButton() {
+  const btn = document.getElementById("btn-save-tx-edit");
+  if (!btn) return;
+  const date   = (document.getElementById("tx-edit-date")?.value || "").trim();
+  const amount = (document.getElementById("tx-edit-amount")?.value || "").trim();
+  const desc   = (document.getElementById("tx-edit-desc")?.value || "").trim();
+  btn.disabled = !(date && amount !== "" && desc);
 }
 
 /* ─── Charts ─── */
@@ -1168,6 +1217,30 @@ function applyChartDefaults() {
   _chartDefaultsApplied = true;
 }
 
+function setChartEmpty(canvasId, isEmpty, title, hint) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const card = canvas.parentElement;
+  if (!card) return;
+  const emptyId = "empty-for-" + canvasId;
+  let emptyEl = card.querySelector("#" + emptyId);
+  if (isEmpty) {
+    canvas.style.display = "none";
+    if (!emptyEl) {
+      emptyEl = document.createElement("div");
+      emptyEl.id = emptyId;
+      emptyEl.className = "chart-empty";
+      card.appendChild(emptyEl);
+    }
+    emptyEl.innerHTML =
+      `<div class="chart-empty-title">${escapeHtml(title)}</div>` +
+      (hint ? `<div class="chart-empty-hint">${escapeHtml(hint)}</div>` : "");
+  } else {
+    canvas.style.display = "";
+    if (emptyEl) emptyEl.remove();
+  }
+}
+
 function renderCharts() {
   applyChartDefaults();
   const inp = state.inputs;
@@ -1183,30 +1256,37 @@ function renderCharts() {
   const catNames  = state.categories.map(c => c.name);
   const catAmts   = state.categories.map(c => c.amount);
   const palette   = ["#3b82f6","#8b5cf6","#06b6d4","#22d369","#f59e0b","#f43f5e","#c026d3","#64748b"];
+  const noCatData = state.categories.length === 0 || catAmts.reduce((s, x) => s + (x || 0), 0) === 0;
 
   // Donut — by category
-  chartInstances["chart-donut-cat"] = new Chart(document.getElementById("chart-donut-cat"), {
-    type: "doughnut",
-    data: { labels: catNames, datasets: [{ data: catAmts, backgroundColor: palette }] },
-    options: { plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } }, cutout: "65%" }
-  });
+  setChartEmpty("chart-donut-cat", noCatData, "אין עדיין נתונים", "הוסיפו קטגוריות בלשונית קטגוריות");
+  if (!noCatData) {
+    chartInstances["chart-donut-cat"] = new Chart(document.getElementById("chart-donut-cat"), {
+      type: "doughnut",
+      data: { labels: catNames, datasets: [{ data: catAmts, backgroundColor: palette }] },
+      options: { plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } }, cutout: "65%" }
+    });
+  }
 
   // Bar — by category
-  chartInstances["chart-bar-cat"] = new Chart(document.getElementById("chart-bar-cat"), {
-    type: "bar",
-    data: {
-      labels: catNames,
-      datasets: [{ label: "סכום ₪", data: catAmts, backgroundColor: palette }]
-    },
-    options: {
-      indexAxis: "y",
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
-        y: { ticks: { color: "#f0f0fa" }, grid: { color: "rgba(255,255,255,0.05)" } }
+  setChartEmpty("chart-bar-cat", noCatData, "אין עדיין נתונים", "הוסיפו קטגוריות בלשונית קטגוריות");
+  if (!noCatData) {
+    chartInstances["chart-bar-cat"] = new Chart(document.getElementById("chart-bar-cat"), {
+      type: "bar",
+      data: {
+        labels: catNames,
+        datasets: [{ label: "סכום ₪", data: catAmts, backgroundColor: palette }]
+      },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
+          y: { ticks: { color: "#f0f0fa" }, grid: { color: "rgba(255,255,255,0.05)" } }
+        }
       }
-    }
-  });
+    });
+  }
 
   // Line — monthly trend
   const trend = state.monthlyTrend || DEFAULTS.monthlyTrend;
@@ -1241,14 +1321,17 @@ function renderCharts() {
     else if (cat.type === "transfer") groups["העברה"] += cat.amount;
     else groups["אחר"] += cat.amount;
   });
-  chartInstances["chart-nwsd"] = new Chart(document.getElementById("chart-nwsd"), {
-    type: "doughnut",
-    data: {
-      labels: Object.keys(groups),
-      datasets: [{ data: Object.values(groups), backgroundColor: ["#22d369","#3b82f6","#8b5cf6","#f59e0b","#475569"] }]
-    },
-    options: { plugins: { legend: { labels: { color: "#f0f0fa" } } }, cutout: "65%" }
-  });
+  setChartEmpty("chart-nwsd", noCatData, "אין עדיין נתונים", "סווגו את הקטגוריות לפי סוג כדי לראות פילוח");
+  if (!noCatData) {
+    chartInstances["chart-nwsd"] = new Chart(document.getElementById("chart-nwsd"), {
+      type: "doughnut",
+      data: {
+        labels: Object.keys(groups),
+        datasets: [{ data: Object.values(groups), backgroundColor: ["#22d369","#3b82f6","#8b5cf6","#f59e0b","#475569"] }]
+      },
+      options: { plugins: { legend: { labels: { color: "#f0f0fa" } } }, cutout: "65%" }
+    });
+  }
 
   // Emergency fund progress bar (HTML, not chart)
   const efBar = document.getElementById("ef-chart-bar");
@@ -1318,7 +1401,7 @@ function renderETF() {
   // Existing fields
   document.getElementById("etf-label").textContent         = c.label;
   document.getElementById("etf-label").className           = "etf-label-big " + recLabelClass(c.label);
-  document.getElementById("etf-explanation").textContent   = c.explanation;
+  renderExplanationBullets("etf-explanation", c.explanation);
   document.getElementById("etf-etf-amt").textContent       = fmt(c.etf);
   document.getElementById("etf-cash-amt").textContent      = fmt(c.cashSav);
   document.getElementById("etf-split").textContent         = c.split;
@@ -1500,10 +1583,41 @@ window.addEventListener("DOMContentLoaded", () => {
   function closeNav() { document.body.classList.remove("nav-open"); }
   navToggle.addEventListener("click", () => document.body.classList.toggle("nav-open"));
   navBackdrop.addEventListener("click", closeNav);
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeNav(); });
+
+  // Escape: modal closes first if open, else drawer closes
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (isTxModalOpen()) { closeTxModal(); return; }
+    closeNav();
+  });
+
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.addEventListener("click", () => { if (window.innerWidth >= 640) closeNav(); });
   });
+
+  // Modal backdrop click → close (only when click lands on overlay itself)
+  const txModalEl = document.getElementById("tx-modal");
+  if (txModalEl) {
+    txModalEl.addEventListener("click", e => {
+      if (e.target === txModalEl) closeTxModal();
+    });
+  }
+
+  // Live disable: "save transaction" button when required fields empty
+  ["tx-edit-date", "tx-edit-amount", "tx-edit-desc"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", refreshTxModalSaveButton);
+  });
+
+  // Live disable: "add category" button when name empty
+  const newCatNameEl = document.getElementById("new-cat-name");
+  const addCatBtn    = document.getElementById("btn-add-cat");
+  function refreshAddCatBtn() {
+    if (!addCatBtn || !newCatNameEl) return;
+    addCatBtn.disabled = newCatNameEl.value.trim() === "";
+  }
+  if (newCatNameEl) newCatNameEl.addEventListener("input", refreshAddCatBtn);
+  refreshAddCatBtn();
 
   showScreen("dashboard");
 });
