@@ -86,20 +86,40 @@ function mergeDefaults(loaded, defs) {
   }
 }
 
-function saveState() {
+let _saveTimer = null;
+const SAVE_DEBOUNCE_MS = 400;
+
+function saveStateNow() {
+  if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(state));
   } catch (e) {}
-  updateSaveStatus();
+  updateSaveStatus("saved");
 }
 
-function updateSaveStatus() {
+function saveState() {
+  updateSaveStatus("pending");
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => { _saveTimer = null; saveStateNow(); }, SAVE_DEBOUNCE_MS);
+}
+
+function updateSaveStatus(mode) {
   const el = document.getElementById("autosave-status");
   if (!el) return;
-  const t = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-  el.textContent = "✓ נשמר אוטומטית — " + t;
-  el.classList.add("status-saved");
+  if (mode === "pending") {
+    el.textContent = "ממתין לשמירה...";
+    el.classList.remove("status-saved");
+  } else {
+    const t = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+    el.textContent = "✓ נשמר אוטומטית — " + t;
+    el.classList.add("status-saved");
+  }
 }
+
+window.addEventListener("beforeunload", () => { if (_saveTimer) saveStateNow(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && _saveTimer) saveStateNow();
+});
 
 /* ─── Helpers ─── */
 function fmt(n) {
@@ -334,6 +354,7 @@ function renderEtfCards(scored) {
 }
 
 function renderReturnChart(scored) {
+  applyChartDefaults();
   destroyChart("chart-etf-compare");
   const canvas   = document.getElementById("chart-etf-compare");
   const noDataEl = document.getElementById("etfc-chart-no-data");
@@ -355,10 +376,16 @@ function renderReturnChart(scored) {
       ]
     },
     options: {
-      plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } },
+      plugins: {
+        legend: { labels: { color: "#f0f0fa", font: { size: 11 } } },
+        tooltip: { callbacks: { label: (ctx) => {
+          const v = ctx.parsed?.y ?? 0;
+          return (ctx.dataset.label || "") + ": " + (isNaN(v) ? "—" : v.toFixed(2) + "%");
+        } } }
+      },
       scales: {
         x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
-        y: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" }, title: { display: true, text: "%", color: "#6b7280" } }
+        y: { ticks: { color: "#6b7280", callback: v => v + "%" }, grid: { color: "rgba(255,255,255,0.05)" }, title: { display: true, text: "%", color: "#6b7280" } }
       }
     }
   });
@@ -487,9 +514,11 @@ async function renderEtfCompare() {
 function calc() {
   const inp = state.inputs;
   const totalCatExpenses = state.categories.reduce((s, c) => s + (c.type !== "transfer" ? c.amount : 0), 0);
-  const essentialExpenses = (inp.essentialMonthly > 0)
+  const essentialRaw = (inp.essentialMonthly > 0)
     ? inp.essentialMonthly
     : inp.monthlyExpenses * 0.7;
+  const essentialCapped = inp.monthlyExpenses > 0 && essentialRaw > inp.monthlyExpenses;
+  const essentialExpenses = essentialCapped ? inp.monthlyExpenses : essentialRaw;
   const ef3  = essentialExpenses * 3;
   const ef6  = essentialExpenses * 6;
   const ef12 = essentialExpenses * 12;
@@ -548,7 +577,7 @@ function calc() {
   ];
 
   return {
-    essentialExpenses, emergencyTarget, liquidGap, monthlySurplus,
+    essentialExpenses, essentialCapped, essentialRaw, emergencyTarget, liquidGap, monthlySurplus,
     ccPressure, expenseRatio, savingsRate, totalCatExpenses,
     etf, cashSav, label, explanation, split, efProgress,
     ef3, ef6, ef12, efMonthsCovered, decisionSteps,
@@ -783,6 +812,17 @@ function renderInputs() {
   document.getElementById("inp-ef-months").value = inp.emergencyFundMonths;
   const etfSrcEl = document.getElementById("inp-etf-source");
   if (etfSrcEl) etfSrcEl.value = getEtfSettings().dataSource;
+
+  const warnEl = document.getElementById("inp-ef-essential-warn");
+  if (warnEl) {
+    if (inp.essentialMonthly > 0 && inp.monthlyExpenses > 0 && inp.essentialMonthly > inp.monthlyExpenses) {
+      warnEl.textContent = `⚠ הוצאות בסיסיות (${fmt(inp.essentialMonthly)}) גבוהות מסך ההוצאות החודשיות (${fmt(inp.monthlyExpenses)}). לחישוב קרן החירום נעשה שימוש בערך התחתון.`;
+      warnEl.classList.remove("hidden");
+    } else {
+      warnEl.textContent = "";
+      warnEl.classList.add("hidden");
+    }
+  }
 }
 
 function bindInputs() {
@@ -804,10 +844,28 @@ function bindInputs() {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener("input", () => {
-      state.inputs[key] = type === "number" ? parseFloat(el.value) || 0 : el.value;
+      if (type === "number") {
+        const n = parseFloat(el.value);
+        state.inputs[key] = isFinite(n) && n > 0 ? n : 0;
+      } else {
+        state.inputs[key] = el.value;
+      }
       saveState();
       if (activeScreen === "dashboard") renderDashboard();
       if (activeScreen === "etf") renderETF();
+      if (activeScreen === "inputs" && (key === "essentialMonthly" || key === "monthlyExpenses")) {
+        const warnEl = document.getElementById("inp-ef-essential-warn");
+        if (warnEl) {
+          const e = state.inputs.essentialMonthly, m = state.inputs.monthlyExpenses;
+          if (e > 0 && m > 0 && e > m) {
+            warnEl.textContent = `⚠ הוצאות בסיסיות (${fmt(e)}) גבוהות מסך ההוצאות החודשיות (${fmt(m)}). לחישוב קרן החירום נעשה שימוש בערך התחתון.`;
+            warnEl.classList.remove("hidden");
+          } else {
+            warnEl.textContent = "";
+            warnEl.classList.add("hidden");
+          }
+        }
+      }
     });
   });
 
@@ -848,22 +906,37 @@ function renderCategories() {
     ? filtered.filter(c => c.id === activeCatId)
     : filtered;
 
-  tbody.innerHTML = displayed.map(cat => `
-    <tr>
-      <td><input class="inline-edit" value="${cat.name}" onchange="updateCat(${cat.id},'name',this.value)" /></td>
-      <td><input class="inline-edit num" type="number" value="${cat.amount}" onchange="updateCat(${cat.id},'amount',parseFloat(this.value)||0)" /></td>
-      <td class="percent">${pct(cat.amount, total)}</td>
-      <td class="percent">${pct(cat.amount, inp.monthlyIncome)}</td>
-      <td>
-        <select class="inline-select" onchange="updateCat(${cat.id},'type',this.value)">
-          ${["need","want","savings","investment","debt","transfer","other"].map(t =>
-            `<option value="${t}" ${cat.type===t?"selected":""}>${typeLabelHe(t)}</option>`
-          ).join("")}
-        </select>
-      </td>
-      <td>${cat.source}</td>
-      <td><button class="btn-icon btn-del" onclick="deleteCat(${cat.id})">✕</button></td>
-    </tr>`).join("");
+  if (displayed.length === 0) {
+    const noCatsAtAll = state.categories.length === 0;
+    const title = noCatsAtAll ? "אין עדיין קטגוריות" : "לא נמצאו קטגוריות תואמות";
+    const hint  = noCatsAtAll
+      ? "הוסיפו קטגוריה כדי להתחיל לעקוב אחרי ההוצאות"
+      : "נקו את הסינון או בחרו ‘כל הקטגוריות’";
+    tbody.innerHTML = `
+      <tr><td colspan="7">
+        <div class="empty-state">
+          <div class="empty-title">${title}</div>
+          <div class="empty-hint">${hint}</div>
+        </div>
+      </td></tr>`;
+  } else {
+    tbody.innerHTML = displayed.map(cat => `
+      <tr>
+        <td><input class="inline-edit" value="${cat.name}" onchange="updateCat(${cat.id},'name',this.value)" /></td>
+        <td><input class="inline-edit num" type="number" value="${cat.amount}" onchange="updateCat(${cat.id},'amount',parseFloat(this.value)||0)" /></td>
+        <td class="percent">${pct(cat.amount, total)}</td>
+        <td class="percent">${pct(cat.amount, inp.monthlyIncome)}</td>
+        <td>
+          <select class="inline-select" onchange="updateCat(${cat.id},'type',this.value)">
+            ${["need","want","savings","investment","debt","transfer","other"].map(t =>
+              `<option value="${t}" ${cat.type===t?"selected":""}>${typeLabelHe(t)}</option>`
+            ).join("")}
+          </select>
+        </td>
+        <td>${cat.source}</td>
+        <td><button class="btn-icon btn-del" onclick="deleteCat(${cat.id})" aria-label="מחק קטגוריה">✕</button></td>
+      </tr>`).join("");
+  }
 
   renderCatSidebar();
 }
@@ -970,20 +1043,38 @@ function renderTransactions() {
   });
 
   const tbody = document.getElementById("tx-tbody");
-  tbody.innerHTML = txs.map(tx => `
-    <tr>
-      <td class="date-cell">${tx.date}</td>
-      <td>${tx.description}</td>
-      <td><span class="currency ${tx.amount < 0 ? 'negative' : 'positive'}">${fmtSigned(tx.amount)}</span></td>
-      <td>${tx.source}</td>
-      <td>${tx.category}</td>
-      <td>${typeLabelTx(tx.type)}</td>
-      <td>${tx.notes || ""}</td>
-      <td>
-        <button class="btn-icon btn-edit" onclick="openEditTx(${tx.id})">✎</button>
-        <button class="btn-icon btn-del" onclick="deleteTx(${tx.id})">✕</button>
-      </td>
-    </tr>`).join("");
+  if (txs.length === 0) {
+    const noTxAtAll = state.transactions.length === 0;
+    const isFiltered = !!(txFilter.month || txFilter.category || txFilter.search);
+    const title = noTxAtAll
+      ? "אין עדיין עסקאות"
+      : isFiltered ? "לא נמצאו עסקאות תואמות לסינון" : "אין עדיין עסקאות";
+    const hint = noTxAtAll
+      ? "הוסיפו עסקה ראשונה כדי להתחיל"
+      : isFiltered ? "נקו את הסינון כדי לראות את כל העסקאות" : "";
+    tbody.innerHTML = `
+      <tr><td colspan="8">
+        <div class="empty-state">
+          <div class="empty-title">${title}</div>
+          ${hint ? `<div class="empty-hint">${hint}</div>` : ""}
+        </div>
+      </td></tr>`;
+  } else {
+    tbody.innerHTML = txs.map(tx => `
+      <tr>
+        <td class="date-cell">${tx.date}</td>
+        <td>${tx.description}</td>
+        <td><span class="currency ${tx.amount < 0 ? 'negative' : 'positive'}">${fmtSigned(tx.amount)}</span></td>
+        <td>${tx.source}</td>
+        <td>${tx.category}</td>
+        <td>${typeLabelTx(tx.type)}</td>
+        <td>${tx.notes || ""}</td>
+        <td>
+          <button class="btn-icon btn-edit" onclick="openEditTx(${tx.id})" aria-label="ערוך עסקה">✎</button>
+          <button class="btn-icon btn-del"  onclick="deleteTx(${tx.id})"   aria-label="מחק עסקה">✕</button>
+        </td>
+      </tr>`).join("");
+  }
 
   // populate category filter dropdown
   const cats = [...new Set(state.transactions.map(t => t.category))];
@@ -1053,8 +1144,32 @@ function closeTxModal() {
 
 /* ─── Charts ─── */
 let chartInstances = {};
+let _chartDefaultsApplied = false;
+
+function applyChartDefaults() {
+  if (_chartDefaultsApplied || typeof Chart === "undefined") return;
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.color = "#f0f0fa";
+  Chart.defaults.font.family = "-apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+  Chart.defaults.plugins.tooltip.backgroundColor = "rgba(15,15,22,0.96)";
+  Chart.defaults.plugins.tooltip.titleColor = "#f0f0fa";
+  Chart.defaults.plugins.tooltip.bodyColor = "#f0f0fa";
+  Chart.defaults.plugins.tooltip.borderColor = "rgba(255,255,255,0.09)";
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.callbacks.label = function(ctx) {
+    const label = ctx.dataset.label || ctx.label || "";
+    const v = ctx.parsed?.y ?? ctx.parsed?.x ?? ctx.parsed;
+    if (v == null || isNaN(v)) return label;
+    return (label ? label + ": " : "") + fmt(v);
+  };
+  _chartDefaultsApplied = true;
+}
 
 function renderCharts() {
+  applyChartDefaults();
   const inp = state.inputs;
   const c = calc();
 
