@@ -40,6 +40,8 @@
   <!-- ══ DASHBOARD ══ -->
   <section id="screen-dashboard">
 
+    <div id="dash-no-data-banner" class="empty-state hidden" style="margin-bottom:.85rem;"></div>
+
     <div class="dashboard-hero">
       <div class="hero-eyebrow">מצב פיננסי</div>
       <div class="hero-kpi-label">עודף / גירעון חודשי</div>
@@ -129,6 +131,7 @@
       <div class="progress-track">
         <div class="progress-fill" id="ef-progress-bar" style="width:0%">0%</div>
       </div>
+      <div id="ef-next-milestone" class="ef-next-milestone"></div>
       <div id="ef-status-text" class="ef-status ef-gap">—</div>
     </div>
 
@@ -446,6 +449,7 @@
 
     <div class="card">
       <div id="etf-label" class="etf-label-big">—</div>
+      <div id="etf-gate-reason" class="rec-gate hidden"></div>
       <div id="etf-explanation" class="small" style="margin-top:.5rem;line-height:1.6">—</div>
     </div>
 
@@ -556,6 +560,7 @@
     <div class="card">
       <div class="card-section-title">ציון לפי סיבולת סיכון</div>
       <div class="small">הציון המשוקלל מותאם לפי הגדרת הסיכון שלך: <strong id="etfc-risk-display">—</strong></div>
+      <div id="etfc-weights-banner" class="etfc-weights-banner"></div>
     </div>
 
     <div class="etfc-manual-label" id="etfc-manual-label">⚠ נתוני ETF מתוחזקים ידנית — לעיון בלבד, אינם עדכוניים בזמן אמת</div>

@@ -132,8 +132,10 @@ function fmtSigned(n) {
   return s + "₪" + Math.abs(n).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function pct(n, d) {
-  if (!d) return "0.0%";
-  return ((n / d) * 100).toFixed(1) + "%";
+  if (!d || !isFinite(d) || d <= 0) return "—";
+  const v = (n / d) * 100;
+  if (!isFinite(v)) return "—";
+  return v.toFixed(1) + "%";
 }
 function uid() { return Date.now() + Math.random().toString(36).slice(2); }
 
@@ -234,12 +236,14 @@ async function fetchEtfMarketData(symbols) {
   }
 }
 
+const ETF_SCORING_WEIGHTS = {
+  low:    { expense: 0.25, ret: 0.20, vol: 0.30, liq: 0.10, div: 0.15 },
+  medium: { expense: 0.25, ret: 0.25, vol: 0.20, liq: 0.15, div: 0.15 },
+  high:   { expense: 0.20, ret: 0.35, vol: 0.10, liq: 0.20, div: 0.15 }
+};
+
 function scoreEtfs(symbols, marketData, risk) {
-  const W = {
-    low:    { expense: 0.25, ret: 0.20, vol: 0.30, liq: 0.10, div: 0.15 },
-    medium: { expense: 0.25, ret: 0.25, vol: 0.20, liq: 0.15, div: 0.15 },
-    high:   { expense: 0.20, ret: 0.35, vol: 0.10, liq: 0.20, div: 0.15 }
-  };
+  const W = ETF_SCORING_WEIGHTS;
   const w = W[risk] || W.medium;
 
   function safeNum(sym, field, fallback) {
@@ -346,7 +350,7 @@ function renderEtfCards(scored) {
         <span class="etfc-symbol">${symbol}</span>
         <span class="etfc-rank">#${idx + 1}</span>
       </div>
-      ${idx === 0 ? '<span class="etfc-best-badge">מדורג ראשון לפי הקריטריונים שהוגדרו</span>' : ""}
+      ${idx === 0 ? '<span class="etfc-best-badge">ציון גבוה ביותר לפי הקריטריונים שהוגדרו · אינו ייעוץ או המלצה אישית</span>' : ""}
       <div class="etfc-name">${data.name || symbol}</div>
       <div class="etfc-price-row">
         <span class="etfc-price">$${(data.demoPrice || 0).toFixed(2)}</span>
@@ -478,6 +482,17 @@ async function renderEtfCompare() {
   const rdEl = document.getElementById("etfc-risk-display");
   if (rdEl) rdEl.textContent = riskLabels[risk] || risk;
 
+  const wbEl = document.getElementById("etfc-weights-banner");
+  if (wbEl) {
+    const w = ETF_SCORING_WEIGHTS[risk] || ETF_SCORING_WEIGHTS.medium;
+    const pctStr = (k) => Math.round(w[k] * 100) + "%";
+    wbEl.innerHTML =
+      `<span class="etfc-weights-prefix">ציון מחושב לפי:</span> ` +
+      `דמי ניהול ${pctStr("expense")} · תשואה ${pctStr("ret")} · ` +
+      `יציבות ${pctStr("vol")} · נזילות ${pctStr("liq")} · פיזור ${pctStr("div")} ` +
+      `<span class="etfc-weights-suffix">(פרופיל סיכון ${riskLabels[risk] || risk})</span>`;
+  }
+
   renderEtfContext(c);
   renderWatchlistChips(s.watchlist);
 
@@ -515,8 +530,8 @@ async function renderEtfCompare() {
       noticeEl.textContent = "לא ניתן היה לעדכן נתוני שוק. מוצגים נתונים אחרונים שנשמרו או נתוני דמו.";
       noticeEl.className   = "etfc-demo-notice failed";
     } else {
-      noticeEl.textContent = "";
-      noticeEl.className   = "etfc-demo-notice hidden";
+      noticeEl.textContent = "מצב חי מעדכן מחיר, שינוי יומי, תשואה שנתית, דיבידנד ו-AUM. דמי ניהול, תנודתיות ותשואות 3/5 שנים נשמרים ידנית באפליקציה.";
+      noticeEl.className   = "etfc-demo-notice live-partial";
     }
   }
 
@@ -543,7 +558,8 @@ function calc() {
   const ef3  = essentialExpenses * 3;
   const ef6  = essentialExpenses * 6;
   const ef12 = essentialExpenses * 12;
-  const emergencyTarget   = ef6;
+  const monthsTarget      = (inp.emergencyFundMonths >= 1 && inp.emergencyFundMonths <= 18) ? Math.round(inp.emergencyFundMonths) : 6;
+  const emergencyTarget   = essentialExpenses * monthsTarget;
   const liquidCash        = inp.availableToWithdraw;
   const liquidGap         = emergencyTarget - liquidCash;
   const efMonthsCovered   = essentialExpenses > 0 ? liquidCash / essentialExpenses : 0;
@@ -553,29 +569,33 @@ function calc() {
   const savingsRate       = monthlySurplus > 0 ? (monthlySurplus / inp.monthlyIncome) : 0;
 
   // ETF recommendation engine
-  let etf = 0, cashSav = 0, label = "", explanation = "", split = "100% ייצוב תזרים";
+  let etf = 0, cashSav = 0, label = "", explanation = "", split = "100% ייצוב תזרים", gateReason = "";
 
   if (monthlySurplus <= 0) {
     label = "קודם לייצב תזרים";
     explanation = `ההוצאות החודשיות (${fmt(inp.monthlyExpenses)}) עולות על ההכנסה (${fmt(inp.monthlyIncome)}). גירעון של ${fmt(Math.abs(monthlySurplus))} לחודש. אין עודף להשקעה כרגע.`;
     split = "100% ייצוב תזרים";
+    gateReason = "תזרים שלילי או מאוזן";
   } else if (inp.investmentHorizon === "<1") {
     cashSav = monthlySurplus;
     label = "קודם לייצב תזרים";
     explanation = `אופק ההשקעה קצר מדי ל-ETF. מוצע לחסוך את כל העודף (${fmt(monthlySurplus)}) במזומן.`;
     split = "100% חיסכון מזומן";
+    gateReason = "אופק השקעה קצר מדי (פחות משנה)";
   } else if (efMonthsCovered < 3) {
     cashSav = monthlySurplus;
     label = "קודם לבנות קרן חירום";
     explanation = `קרן החירום חסרה ${fmt(liquidGap)}. כל העודף החודשי (${fmt(monthlySurplus)}) יופנה לחיסכון מזומן.`;
     split = "100% קרן חירום";
+    gateReason = "קרן חירום מתחת ל-3 חודשים";
   } else if (efMonthsCovered < 6) {
     const etfFraction = inp.riskTolerance === "low" ? 0.2 : inp.riskTolerance === "high" ? 0.5 : 0.3;
     cashSav = Math.round(monthlySurplus * (1 - etfFraction));
     etf = Math.round(monthlySurplus * etfFraction);
     label = "אפשר לשלב חיסכון ו־ETF";
-    explanation = `קרן החירום קרובה ליעד. מוצע פיצול: ${fmt(cashSav)} לחיסכון, ${fmt(etf)} ל-ETF.`;
+    explanation = `קרן החירום קרובה ליעד 6 חודשים. מוצע פיצול: ${fmt(cashSav)} לחיסכון, ${fmt(etf)} ל-ETF.`;
     split = `${Math.round((1 - etfFraction) * 100)}% חיסכון / ${Math.round(etfFraction * 100)}% ETF`;
+    gateReason = "קרן חירום בין 3 ל-6 חודשים (שלב הדרגתי)";
   } else {
     let etfFraction = inp.riskTolerance === "low" ? 0.4 : inp.riskTolerance === "high" ? 0.8 : 0.6;
     if (inp.investmentHorizon === "1-5") etfFraction = Math.min(etfFraction, 0.5);
@@ -584,11 +604,14 @@ function calc() {
     label = "אפשר להגדיל חשיפה ל־ETF";
     explanation = `קרן החירום מכוסה. ניתן להשקיע ${fmt(etf)} ב-ETF ולחסוך ${fmt(cashSav)} במזומן.`;
     split = `${Math.round((1 - etfFraction) * 100)}% חיסכון / ${Math.round(etfFraction * 100)}% ETF`;
+    gateReason = "קרן חירום מכוסה (≥ 6 חודשים)";
   }
 
   // Interpretation
   const topCat = [...state.categories].sort((a, b) => b.amount - a.amount)[0];
-  const efProgress = Math.min((liquidCash / emergencyTarget) * 100, 100);
+  const efProgress = emergencyTarget > 0
+    ? Math.min((liquidCash / emergencyTarget) * 100, 100)
+    : 0;
 
   const decisionSteps = [
     { rule: "תזרים חיובי",          pass: monthlySurplus > 0,  value: fmtSigned(monthlySurplus) },
@@ -596,6 +619,11 @@ function calc() {
     { rule: "קרן חירום ≥ 6 חודשים", pass: efMonthsCovered >= 6, value: efMonthsCovered.toFixed(1) + " חודשים" },
     { rule: "יחס הוצאות < 95%",     pass: expenseRatio < 0.95, value: pct(inp.monthlyExpenses, inp.monthlyIncome) },
   ];
+  const firstFailIdx = decisionSteps.findIndex(s => !s.pass);
+  const activeIdx    = firstFailIdx === -1 ? decisionSteps.length - 1 : firstFailIdx;
+  decisionSteps[activeIdx].active = true;
+
+  const hasNoData = inp.monthlyIncome <= 0 && inp.monthlyExpenses <= 0;
 
   return {
     essentialExpenses, essentialCapped, essentialRaw, emergencyTarget, liquidGap, monthlySurplus,
@@ -603,7 +631,8 @@ function calc() {
     etf, cashSav, label, explanation, split, efProgress,
     ef3, ef6, ef12, efMonthsCovered, decisionSteps,
     efOk: liquidCash >= emergencyTarget,
-    topCat
+    topCat,
+    monthsTarget, gateReason, hasNoData
   };
 }
 
@@ -633,6 +662,19 @@ function renderDashboard() {
   const c   = calc();
   const inp = state.inputs;
   const efPctStr = c.efProgress.toFixed(1) + "%";
+
+  // No-data sanity banner
+  const ndb = document.getElementById("dash-no-data-banner");
+  if (ndb) {
+    if (c.hasNoData) {
+      ndb.innerHTML = `<div class="empty-title">לא הוזנו עדיין נתונים</div>
+        <div class="empty-hint">מלאו ‘הכנסה חודשית’ ו-‘הוצאות חודשיות’ בלשונית קלט כדי לראות חישובים אמיתיים.</div>`;
+      ndb.classList.remove("hidden");
+    } else {
+      ndb.innerHTML = "";
+      ndb.classList.add("hidden");
+    }
+  }
 
   // Hero banner
   const heroSurplus = document.getElementById("hero-surplus");
@@ -684,6 +726,23 @@ function renderDashboard() {
   const bar = document.getElementById("ef-progress-bar");
   if (bar) { bar.style.width = efPctStr; bar.textContent = efPctStr; }
 
+  const nextEl = document.getElementById("ef-next-milestone");
+  if (nextEl) {
+    const n = c.monthsTarget;
+    if (c.emergencyTarget <= 0) {
+      nextEl.textContent = "";
+    } else if (c.liquidGap > 0) {
+      nextEl.textContent = `עוד ${fmt(c.liquidGap)} עד יעד ${n} חודשים`;
+      nextEl.className   = "ef-next-milestone gap";
+    } else if (c.liquidGap === 0) {
+      nextEl.textContent = `✓ יעד ${n} חודשים הושלם`;
+      nextEl.className   = "ef-next-milestone met";
+    } else {
+      nextEl.textContent = `✓ יעד ${n} חודשים הושלם — עודף ${fmt(Math.abs(c.liquidGap))}`;
+      nextEl.className   = "ef-next-milestone met";
+    }
+  }
+
   // המלצה
   document.getElementById("dash-etf").textContent     = fmt(c.etf);
   document.getElementById("dash-cashsav").textContent = fmt(c.cashSav);
@@ -713,7 +772,7 @@ function renderDashboard() {
   const chainEl = document.getElementById("dash-decision-chain");
   if (chainEl && c.decisionSteps) {
     chainEl.innerHTML = c.decisionSteps.map(s =>
-      `<div class="decision-step ${s.pass ? "pass" : "fail"}">` +
+      `<div class="decision-step ${s.pass ? "pass" : "fail"}${s.active ? " active" : ""}">` +
       `<span class="ds-icon" aria-hidden="true">${s.pass ? "✓" : "✗"}</span>` +
       `<span class="ds-rule">${s.rule}</span>` +
       `<span class="ds-val">${s.value}</span></div>`
@@ -868,7 +927,11 @@ function bindInputs() {
     el.addEventListener("input", () => {
       if (type === "number") {
         const n = parseFloat(el.value);
-        state.inputs[key] = isFinite(n) && n > 0 ? n : 0;
+        if (key === "emergencyFundMonths") {
+          state.inputs[key] = isFinite(n) ? Math.min(Math.max(Math.round(n), 1), 18) : 6;
+        } else {
+          state.inputs[key] = isFinite(n) && n > 0 ? n : 0;
+        }
       } else {
         state.inputs[key] = el.value;
       }
@@ -1402,6 +1465,17 @@ function renderETF() {
   document.getElementById("etf-label").textContent         = c.label;
   document.getElementById("etf-label").className           = "etf-label-big " + recLabelClass(c.label);
   renderExplanationBullets("etf-explanation", c.explanation);
+
+  const gateEl = document.getElementById("etf-gate-reason");
+  if (gateEl) {
+    if (c.gateReason) {
+      gateEl.innerHTML = `<span class="rec-gate-label">סיבת ההמלצה:</span> ${escapeHtml(c.gateReason)}`;
+      gateEl.classList.remove("hidden");
+    } else {
+      gateEl.textContent = "";
+      gateEl.classList.add("hidden");
+    }
+  }
   document.getElementById("etf-etf-amt").textContent       = fmt(c.etf);
   document.getElementById("etf-cash-amt").textContent      = fmt(c.cashSav);
   document.getElementById("etf-split").textContent         = c.split;
