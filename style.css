@@ -27,6 +27,7 @@
   --shadow-lg:     0 8px 40px rgba(0,0,0,.65);
   --glass-border:  rgba(255,255,255,0.06);
   --nav-pill-bg:   rgba(59,130,246,0.15);
+  --sidenav-w:     160px;
 }
 
 html { font-size: 16px; }
@@ -662,45 +663,85 @@ tr:hover td { background: rgba(255,255,255,0.025); }
   letter-spacing: .2px;
 }
 
+/* ─── Nav drawer toggle & backdrop ─── */
+.nav-toggle-btn {
+  display: none;
+  align-items: center; justify-content: center;
+  background: none; border: none;
+  color: var(--text); font-size: 1.3rem;
+  cursor: pointer; padding: .3rem .5rem;
+  border-radius: var(--radius-sm); line-height: 1;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.nav-toggle-btn:hover { background: rgba(255,255,255,0.07); }
+
+.nav-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 95;
+}
+
 /* ─── Desktop layout ─── */
 @media (min-width: 640px) {
   #main-content {
     padding-left: 1.75rem;
     padding-right: 1.75rem;
     max-width: 740px;
-    /* bottom nav moves to top on desktop — remove bottom padding */
     padding-bottom: 2rem;
   }
   .cards-grid { grid-template-columns: repeat(3, 1fr); }
 
-  /* Nav moves into header on desktop */
+  /* Nav drawer — hidden by default, slides in when body.nav-open */
+  body { transition: padding-right .28s cubic-bezier(.4,0,.2,1); }
+  body.nav-open { padding-right: var(--sidenav-w); }
+
+  .nav-toggle-btn { display: flex; }
+
   #bottom-nav {
-    top: 0;
-    bottom: auto;
-    left: 0;
-    right: auto;
-    width: auto;
-    height: var(--header-h);
+    top: var(--header-h);
+    bottom: 0;
+    right: 0;
+    left: auto;
+    width: var(--sidenav-w);
+    height: auto;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
     border-top: none;
-    border-bottom: none;
-    background: transparent;
+    border-right: none;
+    border-left: 1px solid var(--glass-border);
+    background: var(--bg2);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    padding: 0 .75rem;
+    padding: .65rem .35rem;
     gap: .1rem;
-    justify-content: flex-start;
-    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transform: translateX(100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
   }
+  body.nav-open #bottom-nav { transform: translateX(0); }
+
+  body.nav-open .nav-backdrop {
+    display: block;
+    background: rgba(0,0,0,0.45);
+  }
+
   .nav-btn {
-    flex-direction: row;
-    font-size: .75rem;
-    gap: .3rem;
+    flex-direction: column;
+    font-size: .65rem;
+    gap: 4px;
     flex: none;
-    padding: .38rem .65rem;
-    border-radius: 8px;
-    margin: 3px 1px;
+    width: 100%;
+    padding: .62rem .4rem;
+    border-radius: var(--radius-sm);
+    margin: 2px 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .nav-btn .icon { font-size: .95rem; }
+  .nav-btn .icon { font-size: 1.15rem; }
 
   #main-content {
     padding-top: calc(var(--header-h) + 18px);
@@ -709,7 +750,7 @@ tr:hover td { background: rgba(255,255,255,0.025); }
   .dashboard-hero { padding: 1.85rem 1.6rem 1.65rem; }
   .hero-kpi-value { font-size: 3.2rem; letter-spacing: -2.5px; }
 
-  #app-footer { display: none; } /* footer hidden on desktop, covered by nav tooltip */
+  #app-footer { display: none; }
 }
 
 /* ─── ETF Compare screen ─── */

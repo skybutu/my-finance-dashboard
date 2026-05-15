@@ -1379,5 +1379,16 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-add-etf-symbol").addEventListener("click", addEtfSymbol);
   document.getElementById("etfc-add-symbol").addEventListener("keydown", e => { if (e.key === "Enter") addEtfSymbol(); });
 
+  // Collapsible nav drawer (desktop only)
+  const navToggle   = document.getElementById("nav-toggle");
+  const navBackdrop = document.getElementById("nav-backdrop");
+  function closeNav() { document.body.classList.remove("nav-open"); }
+  navToggle.addEventListener("click", () => document.body.classList.toggle("nav-open"));
+  navBackdrop.addEventListener("click", closeNav);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeNav(); });
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => { if (window.innerWidth >= 640) closeNav(); });
+  });
+
   showScreen("dashboard");
 });
