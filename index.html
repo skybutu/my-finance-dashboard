@@ -42,11 +42,18 @@
 
     <div id="dash-no-data-banner" class="empty-state hidden" style="margin-bottom:.85rem;"></div>
 
+    <header class="section-ribbon">
+      <span class="eyebrow">סיכום החודש</span>
+      <h1 class="section-ribbon-title">מצב פיננסי</h1>
+    </header>
+
     <div class="dashboard-hero">
-      <div class="hero-eyebrow">מצב פיננסי</div>
-      <div class="hero-kpi-label">עודף / גירעון חודשי</div>
-      <div class="hero-kpi-value currency" id="hero-surplus">—</div>
-      <div class="hero-meta" id="hero-meta">—</div>
+      <div class="hero-content">
+        <div class="hero-eyebrow">עודף / גירעון חודשי</div>
+        <div class="hero-kpi-label" id="hero-kpi-label">עודכן עכשיו</div>
+        <div class="hero-kpi-value currency" id="hero-surplus">—</div>
+        <div class="hero-meta" id="hero-meta">—</div>
+      </div>
     </div>
 
     <h2 class="section-title">מצב החודש</h2>
@@ -54,19 +61,19 @@
     <div class="card">
       <div class="card-section-title">תזרים מזומנים</div>
       <div class="cards-grid-2">
-        <div class="kpi-item">
+        <div class="kpi-item stat-card">
           <div class="card-label">הכנסה חודשית</div>
           <div class="card-value currency" id="dash-income">—</div>
         </div>
-        <div class="kpi-item">
+        <div class="kpi-item stat-card">
           <div class="card-label">הוצאות חודשיות</div>
           <div class="card-value currency" id="dash-expenses">—</div>
         </div>
-        <div class="kpi-item">
+        <div class="kpi-item stat-card">
           <div class="card-label">עודף / גירעון</div>
           <div class="card-value currency" id="dash-surplus">—</div>
         </div>
-        <div class="kpi-item">
+        <div class="kpi-item stat-card">
           <div class="card-label">הוצאות מהכנסה</div>
           <div class="card-value percent" id="dash-expense-ratio">—</div>
         </div>
