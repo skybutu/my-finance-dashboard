@@ -54,6 +54,28 @@ https://<username>.github.io/my-finance-dashboard/
 
 ---
 
+## מבנה הפרויקט / Project structure
+
+| קובץ / File | תפקיד / Purpose |
+| --- | --- |
+| `index.html` | מבנה הדף, מטא־דאטה, ניווט וכל ה־sections של המסכים. Page structure, metadata, navigation and all screen sections. |
+| `style.css` | עיצוב מלא: ערכת צבעים כהה, טיפוגרפיה, פריסה ל־RTL, רספונסיביות. Full styling: dark palette, typography, RTL layout, responsive rules. |
+| `app.js` | כל הלוגיקה: state, חישובים, רינדור, אחסון מקומי וגרפים. All app logic: state, calculations, rendering, local storage, charts. |
+| `.gitignore` · `README.md` | תחזוקה / Repo housekeeping. |
+
+האייקון מוטמע כ־SVG בתוך `<head>` (אין קובץ favicon חיצוני). Chart.js נטען מ־CDN בזמן ריצה.
+The favicon is an inline SVG inside `<head>` (no external favicon file). Chart.js is loaded from a CDN at runtime.
+
+---
+
+## דפדפנים נתמכים / Browser support
+
+נבדק על גרסאות עדכניות של Chrome, Firefox ו־Safari (כולל iOS 15+). דורש JavaScript מופעל ותמיכה ב־`localStorage`. אין צורך בהתקנה — מספיק לפתוח את הדף.
+
+Tested on current Chrome, Firefox, and Safari (incl. iOS 15+). Requires JavaScript and `localStorage` support. No installation needed — just open the page.
+
+---
+
 ## גילוי נאות / Disclaimer
 
 המידע באפליקציה הוא לצורכי מידע והשוואה בלבד ואינו מהווה ייעוץ השקעות, ייעוץ פיננסי או המלצה אישית לקנייה/מכירה של נייר ערך. לפני החלטת השקעה יש להתייעץ עם בעל רישיון מתאים. כלי זה מיועד לחינוך פיננסי בלבד.
