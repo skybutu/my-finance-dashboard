@@ -145,6 +145,24 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+function renderSplitBar(elId, c) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const cash = Math.max(0, Number(c.cashSav) || 0);
+  const etf  = Math.max(0, Number(c.etf)     || 0);
+  const total = cash + etf;
+  if (total > 0) {
+    const cashPct = (cash / total) * 100;
+    const etfPct  = 100 - cashPct;
+    el.innerHTML =
+      `<span class="split-bar-segment cash" style="width:${cashPct.toFixed(1)}%"></span>` +
+      `<span class="split-bar-segment etf"  style="width:${etfPct.toFixed(1)}%"></span>`;
+  } else {
+    // Surplus <= 0 → single segment representing "100% ייצוב תזרים"
+    el.innerHTML = `<span class="split-bar-segment flow" style="width:100%"></span>`;
+  }
+}
+
 function renderExplanationBullets(elId, text) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -486,11 +504,26 @@ async function renderEtfCompare() {
   if (wbEl) {
     const w = ETF_SCORING_WEIGHTS[risk] || ETF_SCORING_WEIGHTS.medium;
     const pctStr = (k) => Math.round(w[k] * 100) + "%";
+    const wKeys = [
+      ["expense", "דמי ניהול"],
+      ["ret",     "תשואה"],
+      ["vol",     "יציבות"],
+      ["liq",     "נזילות"],
+      ["div",     "פיזור"]
+    ];
+    const segments = wKeys.map(([k]) =>
+      `<span class="etfc-weights-segment seg-${k}" style="width:${(w[k]*100).toFixed(1)}%"></span>`
+    ).join("");
+    const legend = wKeys.map(([k, name]) =>
+      `<span class="etfc-weights-legend-item seg-${k}">` +
+        `<span class="etfc-weights-legend-name">${name}</span>` +
+        `<span class="etfc-weights-legend-pct">${pctStr(k)}</span>` +
+      `</span>`
+    ).join("");
     wbEl.innerHTML =
-      `<span class="etfc-weights-prefix">ציון מחושב לפי:</span> ` +
-      `דמי ניהול ${pctStr("expense")} · תשואה ${pctStr("ret")} · ` +
-      `יציבות ${pctStr("vol")} · נזילות ${pctStr("liq")} · פיזור ${pctStr("div")} ` +
-      `<span class="etfc-weights-suffix">(פרופיל סיכון ${riskLabels[risk] || risk})</span>`;
+      `<div class="etfc-weights-strip" role="img" aria-label="פילוח משקלות הניקוד">${segments}</div>` +
+      `<div class="etfc-weights-legend">${legend}</div>` +
+      `<div class="etfc-weights-profile">פרופיל סיכון: ${riskLabels[risk] || risk}</div>`;
   }
 
   renderEtfContext(c);
@@ -533,6 +566,24 @@ async function renderEtfCompare() {
       noticeEl.textContent = "מצב חי מעדכן מחיר, שינוי יומי, תשואה שנתית, דיבידנד ו-AUM. דמי ניהול, תנודתיות ותשואות 3/5 שנים נשמרים ידנית באפליקציה.";
       noticeEl.className   = "etfc-demo-notice live-partial";
     }
+  }
+
+  // Data-provenance pill (promoted manual-label)
+  const provEl = document.getElementById("etfc-manual-label");
+  if (provEl) {
+    let provText, provClass;
+    if (s.dataSource === "demo") {
+      provText  = "ידני (דמו) · הנתונים אינם מתעדכנים בזמן אמת";
+      provClass = "prov-demo";
+    } else if (s.liveFetchFailed) {
+      provText  = "לא ניתן לעדכן – דמו זמני · יבדק שוב כשהחיבור יחזור";
+      provClass = "prov-fail";
+    } else {
+      provText  = "חי – חלקי · מחיר ותשואה מתעדכנים, שאר השדות ידניים";
+      provClass = "prov-live-partial";
+    }
+    provEl.textContent = provText;
+    provEl.className   = "etfc-manual-label " + provClass;
   }
 
   const luEl = document.getElementById("etfc-last-updated");
@@ -1479,6 +1530,7 @@ function renderETF() {
   document.getElementById("etf-etf-amt").textContent       = fmt(c.etf);
   document.getElementById("etf-cash-amt").textContent      = fmt(c.cashSav);
   document.getElementById("etf-split").textContent         = c.split;
+  renderSplitBar("etf-split-bar", c);
   document.getElementById("etf-surplus").textContent       = fmtSigned(c.monthlySurplus);
   document.getElementById("etf-surplus").className         = "val currency " + (c.monthlySurplus >= 0 ? "positive" : "negative");
   document.getElementById("etf-ef-gap").textContent        = c.liquidGap > 0 ? fmt(c.liquidGap) + " חסר" : "✓ מכוסה";

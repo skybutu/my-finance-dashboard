@@ -104,20 +104,23 @@
       <div class="liquidity-note">המזומן הזמין למשיכה משמש לחישוב קרן החירום. הסכום הנעול אינו נגיש מיידית.</div>
     </div>
 
+    <header class="section-ribbon">
+      <span class="eyebrow">קרן חירום</span>
+      <h2 class="section-ribbon-title">תכנון קרן חירום</h2>
+    </header>
     <div class="card">
-      <div class="card-section-title">קרן חירום</div>
       <div class="ef-row">
-        <div>
+        <div class="stat-card ef-stat">
           <div class="card-label">יעד</div>
-          <div class="currency" id="dash-ef-target">—</div>
+          <div class="card-value currency" id="dash-ef-target">—</div>
         </div>
-        <div>
+        <div class="stat-card ef-stat">
           <div class="card-label">מזומן זמין</div>
-          <div class="currency" id="dash-ef-liquid">—</div>
+          <div class="card-value currency" id="dash-ef-liquid">—</div>
         </div>
-        <div>
+        <div class="stat-card ef-stat">
           <div class="card-label">פער</div>
-          <div class="number" id="dash-ef-gap">—</div>
+          <div class="card-value number" id="dash-ef-gap">—</div>
         </div>
       </div>
       <div class="ef-milestones">
@@ -147,19 +150,23 @@
       <div id="diagnostic-rows"></div>
     </div>
 
+    <header class="section-ribbon">
+      <span class="eyebrow">מנוע ההמלצה</span>
+      <h2 class="section-ribbon-title">המלצת הקצאה</h2>
+    </header>
     <div class="card">
-      <div class="card-section-title">המלצת הקצאה</div>
       <div class="cards-grid-2">
-        <div class="kpi-item">
+        <div class="kpi-item stat-card">
           <div class="card-label">השקעה ב-ETF</div>
           <div class="card-value currency" id="dash-etf">—</div>
         </div>
-        <div class="kpi-item">
+        <div class="kpi-item stat-card">
           <div class="card-label">חיסכון מזומן</div>
           <div class="card-value currency" id="dash-cashsav">—</div>
         </div>
       </div>
       <div id="dash-label" class="rec-label">—</div>
+      <div class="ds-eyebrow">שרשרת ההחלטה</div>
       <div id="dash-decision-chain" class="decision-chain"></div>
     </div>
 
@@ -445,7 +452,10 @@
 
   <!-- ══ ETF RECOMMENDATION ══ -->
   <section id="screen-etf" class="hidden">
-    <h2 class="section-title">המלצת ETF</h2>
+    <header class="section-ribbon">
+      <span class="eyebrow">המלצה</span>
+      <h2 class="section-ribbon-title">חיסכון מול השקעה</h2>
+    </header>
 
     <div class="etf-decision-box">
       <div class="decision-title">החלטת החודש</div>
@@ -463,17 +473,18 @@
     <div class="card">
       <div class="card-section-title">הקצאה מוצעת</div>
       <div class="etf-grid">
-        <div class="etf-item">
-          <label>השקעת ETF</label>
-          <div class="val currency" id="etf-etf-amt">—</div>
+        <div class="etf-item stat-card">
+          <label class="card-label">השקעת ETF</label>
+          <div class="val card-value currency" id="etf-etf-amt">—</div>
         </div>
-        <div class="etf-item">
-          <label>חיסכון מזומן</label>
-          <div class="val currency" id="etf-cash-amt">—</div>
+        <div class="etf-item stat-card">
+          <label class="card-label">חיסכון מזומן</label>
+          <div class="val card-value currency" id="etf-cash-amt">—</div>
         </div>
         <div class="etf-item">
           <label>פיצול</label>
           <div class="val" id="etf-split">—</div>
+          <div id="etf-split-bar" class="split-bar" aria-hidden="true"></div>
         </div>
         <div class="etf-item">
           <label>עודף חודשי</label>
