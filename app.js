@@ -413,22 +413,22 @@ function renderReturnChart(scored) {
     data: {
       labels: scored.map(s => s.symbol),
       datasets: [
-        { label: "1Y %",  data: scored.map(s => s.data?.return1y  ?? 0), backgroundColor: "rgba(59,130,246,0.55)",  borderColor: "#3b82f6", borderWidth: 1 },
-        { label: "3Y %",  data: scored.map(s => s.data?.return3y  ?? 0), backgroundColor: "rgba(139,92,246,0.55)",  borderColor: "#8b5cf6", borderWidth: 1 },
-        { label: "5Y %",  data: scored.map(s => s.data?.return5y  ?? 0), backgroundColor: "rgba(34,211,105,0.55)",  borderColor: "#22d369", borderWidth: 1 }
+        { label: "1Y %",  data: scored.map(s => s.data?.return1y  ?? 0), backgroundColor: "rgba(59,130,246,0.60)",  borderColor: "#3b82f6", borderWidth: 1, borderRadius: 4, borderSkipped: false, maxBarThickness: 22 },
+        { label: "3Y %",  data: scored.map(s => s.data?.return3y  ?? 0), backgroundColor: "rgba(139,92,246,0.60)",  borderColor: "#8b5cf6", borderWidth: 1, borderRadius: 4, borderSkipped: false, maxBarThickness: 22 },
+        { label: "5Y %",  data: scored.map(s => s.data?.return5y  ?? 0), backgroundColor: "rgba(34,211,105,0.60)",  borderColor: "#22d369", borderWidth: 1, borderRadius: 4, borderSkipped: false, maxBarThickness: 22 }
       ]
     },
     options: {
       plugins: {
-        legend: { labels: { color: "#f0f0fa", font: { size: 11 } } },
+        legend: { labels: { color: "#cdd1dc", font: { size: 11 }, boxWidth: 10, boxHeight: 10, padding: 12 } },
         tooltip: { callbacks: { label: (ctx) => {
           const v = ctx.parsed?.y ?? 0;
           return (ctx.dataset.label || "") + ": " + (isNaN(v) ? "—" : v.toFixed(2) + "%");
         } } }
       },
       scales: {
-        x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
-        y: { ticks: { color: "#6b7280", callback: v => v + "%" }, grid: { color: "rgba(255,255,255,0.05)" }, title: { display: true, text: "%", color: "#6b7280" } }
+        x: { ticks: { color: "#7b8294", font: { size: 10 } }, grid: { display: false, drawBorder: false } },
+        y: { ticks: { color: "#7b8294", font: { size: 10 }, callback: v => v + "%" }, grid: { color: "rgba(255,255,255,0.04)", drawBorder: false }, title: { display: true, text: "%", color: "#7b8294", font: { size: 10 } } }
       }
     }
   });
@@ -1313,15 +1313,27 @@ function applyChartDefaults() {
   if (_chartDefaultsApplied || typeof Chart === "undefined") return;
   Chart.defaults.responsive = true;
   Chart.defaults.maintainAspectRatio = false;
-  Chart.defaults.color = "#f0f0fa";
+  Chart.defaults.color = "#aab0bf";
   Chart.defaults.font.family = "-apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
-  Chart.defaults.plugins.tooltip.backgroundColor = "rgba(15,15,22,0.96)";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.animation.duration = 420;
+  Chart.defaults.borderColor = "rgba(255,255,255,0.04)";
+  Chart.defaults.scale.grid.color = "rgba(255,255,255,0.04)";
+  Chart.defaults.scale.ticks.color = "#7b8294";
+  Chart.defaults.plugins.tooltip.backgroundColor = "rgba(10,10,16,0.96)";
   Chart.defaults.plugins.tooltip.titleColor = "#f0f0fa";
   Chart.defaults.plugins.tooltip.bodyColor = "#f0f0fa";
-  Chart.defaults.plugins.tooltip.borderColor = "rgba(255,255,255,0.09)";
+  Chart.defaults.plugins.tooltip.borderColor = "rgba(255,255,255,0.10)";
   Chart.defaults.plugins.tooltip.borderWidth = 1;
   Chart.defaults.plugins.tooltip.padding = 10;
-  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.cornerRadius = 10;
+  Chart.defaults.plugins.tooltip.titleFont = { size: 11, weight: 700 };
+  Chart.defaults.plugins.tooltip.bodyFont  = { size: 12 };
+  Chart.defaults.plugins.legend.labels.color = "#cdd1dc";
+  Chart.defaults.plugins.legend.labels.font = { size: 11 };
+  Chart.defaults.plugins.legend.labels.boxWidth = 10;
+  Chart.defaults.plugins.legend.labels.boxHeight = 10;
+  Chart.defaults.plugins.legend.labels.padding = 12;
   Chart.defaults.plugins.tooltip.callbacks.label = function(ctx) {
     const label = ctx.dataset.label || ctx.label || "";
     const v = ctx.parsed?.y ?? ctx.parsed?.x ?? ctx.parsed;
@@ -1329,6 +1341,21 @@ function applyChartDefaults() {
     return (label ? label + ": " : "") + fmt(v);
   };
   _chartDefaultsApplied = true;
+}
+
+function renderChartLegendChips(canvasId, labels, palette, values) {
+  const el = document.getElementById("legend-" + canvasId);
+  if (!el) return;
+  if (!labels || !labels.length) { el.innerHTML = ""; return; }
+  el.innerHTML = labels.map((label, i) => {
+    const color = palette[i % palette.length];
+    const v = values && values[i] != null ? fmt(values[i]) : "";
+    return `<span class="chart-legend-chip">` +
+      `<span class="chart-legend-dot" style="background:${color}"></span>` +
+      `<span class="chart-legend-label">${escapeHtml(label)}</span>` +
+      (v ? `<span class="chart-legend-val">${v}</span>` : "") +
+    `</span>`;
+  }).join("");
 }
 
 function setChartEmpty(canvasId, isEmpty, title, hint) {
@@ -1377,9 +1404,12 @@ function renderCharts() {
   if (!noCatData) {
     chartInstances["chart-donut-cat"] = new Chart(document.getElementById("chart-donut-cat"), {
       type: "doughnut",
-      data: { labels: catNames, datasets: [{ data: catAmts, backgroundColor: palette }] },
-      options: { plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } }, cutout: "65%" }
+      data: { labels: catNames, datasets: [{ data: catAmts, backgroundColor: palette, borderColor: "rgba(10,10,16,0.85)", borderWidth: 2 }] },
+      options: { plugins: { legend: { display: false } }, cutout: "68%" }
     });
+    renderChartLegendChips("chart-donut-cat", catNames, palette, catAmts);
+  } else {
+    renderChartLegendChips("chart-donut-cat", [], palette, []);
   }
 
   // Bar — by category
@@ -1389,14 +1419,14 @@ function renderCharts() {
       type: "bar",
       data: {
         labels: catNames,
-        datasets: [{ label: "סכום ₪", data: catAmts, backgroundColor: palette }]
+        datasets: [{ label: "סכום ₪", data: catAmts, backgroundColor: palette, borderRadius: 6, borderSkipped: false, maxBarThickness: 22 }]
       },
       options: {
         indexAxis: "y",
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
-          y: { ticks: { color: "#f0f0fa" }, grid: { color: "rgba(255,255,255,0.05)" } }
+          x: { ticks: { color: "#7b8294", font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.04)", drawBorder: false } },
+          y: { ticks: { color: "#cdd1dc", font: { size: 11 } }, grid: { display: false, drawBorder: false } }
         }
       }
     });
@@ -1411,17 +1441,20 @@ function renderCharts() {
       datasets: [{
         label: "חיוב כרטיס ₪",
         data: trend.map(t => t.amount),
-        backgroundColor: "rgba(59,130,246,0.50)",
+        backgroundColor: "rgba(59,130,246,0.55)",
         borderColor: "#3b82f6",
-        borderWidth: 2,
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+        maxBarThickness: 28,
         type: "bar"
       }]
     },
     options: {
-      plugins: { legend: { labels: { color: "#f0f0fa" } } },
+      plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } },
-        y: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.05)" } }
+        x: { ticks: { color: "#7b8294", font: { size: 10 } }, grid: { display: false, drawBorder: false } },
+        y: { ticks: { color: "#7b8294", font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.04)", drawBorder: false } }
       }
     }
   });
@@ -1435,16 +1468,20 @@ function renderCharts() {
     else if (cat.type === "transfer") groups["העברה"] += cat.amount;
     else groups["אחר"] += cat.amount;
   });
+  const nwsdPalette = ["#22d369","#3b82f6","#8b5cf6","#f59e0b","#475569"];
   setChartEmpty("chart-nwsd", noCatData, "אין עדיין נתונים", "סווגו את הקטגוריות לפי סוג כדי לראות פילוח");
   if (!noCatData) {
     chartInstances["chart-nwsd"] = new Chart(document.getElementById("chart-nwsd"), {
       type: "doughnut",
       data: {
         labels: Object.keys(groups),
-        datasets: [{ data: Object.values(groups), backgroundColor: ["#22d369","#3b82f6","#8b5cf6","#f59e0b","#475569"] }]
+        datasets: [{ data: Object.values(groups), backgroundColor: nwsdPalette, borderColor: "rgba(10,10,16,0.85)", borderWidth: 2 }]
       },
-      options: { plugins: { legend: { labels: { color: "#f0f0fa" } } }, cutout: "65%" }
+      options: { plugins: { legend: { display: false } }, cutout: "68%" }
     });
+    renderChartLegendChips("chart-nwsd", Object.keys(groups), nwsdPalette, Object.values(groups));
+  } else {
+    renderChartLegendChips("chart-nwsd", [], nwsdPalette, []);
   }
 
   // Emergency fund progress bar (HTML, not chart)
@@ -1460,14 +1497,18 @@ function renderCharts() {
   const siCanvas = document.getElementById("chart-save-invest");
   if (siCanvas) {
     const hasSurplus = c.cashSav > 0 || c.etf > 0;
+    const siPalette = ["#3b82f6", "#22d369"];
+    const siLabels  = ["חיסכון מזומן", "השקעת ETF"];
+    const siValues  = hasSurplus ? [c.cashSav || 0, c.etf || 0] : [1, 0];
     chartInstances["chart-save-invest"] = new Chart(siCanvas, {
       type: "doughnut",
       data: {
-        labels: ["חיסכון מזומן", "השקעת ETF"],
-        datasets: [{ data: hasSurplus ? [c.cashSav || 0, c.etf || 0] : [1, 0], backgroundColor: ["#3b82f6", "#22d369"] }]
+        labels: siLabels,
+        datasets: [{ data: siValues, backgroundColor: siPalette, borderColor: "rgba(10,10,16,0.85)", borderWidth: 2 }]
       },
-      options: { plugins: { legend: { labels: { color: "#f0f0fa", font: { size: 11 } } } }, cutout: "65%" }
+      options: { plugins: { legend: { display: false } }, cutout: "68%" }
     });
+    renderChartLegendChips("chart-save-invest", siLabels, siPalette, hasSurplus ? siValues : null);
   }
 
   // EF milestones horizontal bar
@@ -1480,6 +1521,9 @@ function renderCharts() {
         labels: ["מזומן זמין", "יעד 3M", "יעד 6M", "יעד 12M"],
         datasets: [{
           data: [liq, c.ef3, c.ef6, c.ef12],
+          borderRadius: 6,
+          borderSkipped: false,
+          maxBarThickness: 22,
           backgroundColor: [
             liq >= c.ef6  ? "rgba(34,211,105,0.65)" : "rgba(59,130,246,0.65)",
             liq >= c.ef3  ? "rgba(34,211,105,0.45)" : "rgba(251,146,60,0.45)",
@@ -1492,8 +1536,8 @@ function renderCharts() {
         indexAxis: "y",
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#6b7280", callback: v => "₪" + Math.round(v / 1000) + "K" }, grid: { color: "rgba(255,255,255,0.05)" } },
-          y: { ticks: { color: "#f0f0fa" }, grid: { color: "rgba(255,255,255,0.05)" } }
+          x: { ticks: { color: "#7b8294", font: { size: 10 }, callback: v => "₪" + Math.round(v / 1000) + "K" }, grid: { color: "rgba(255,255,255,0.04)", drawBorder: false } },
+          y: { ticks: { color: "#cdd1dc", font: { size: 11 } }, grid: { display: false, drawBorder: false } }
         }
       }
     });
