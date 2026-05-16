@@ -1992,6 +1992,8 @@ button:disabled,
   margin-top: 1rem;
   line-height: 1.75;
   letter-spacing: .005em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Section ribbon adds breathing room before a card */
@@ -2281,6 +2283,105 @@ button:disabled,
   background: rgba(244,63,94,0.08);
   color: var(--state-neg);
   border: 1px solid rgba(244,63,94,0.30);
+}
+
+/* ════════════════════════════════════════════════════════════
+   Phase 4 — mobile / iPhone responsive polish
+   ════════════════════════════════════════════════════════════ */
+
+/* iOS Safari auto-zoom guard: ensure all form inputs render at ≥ 16px on focus */
+.form-group input,
+.form-group select,
+.form-group textarea,
+.inline-edit,
+.inline-select,
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+input[type="search"] {
+  font-size: max(16px, .9rem);
+}
+
+/* ── Narrow phones (iPhone Plus, large Pro) ── */
+@media (max-width: 430px) {
+  /* EF row collapses from 3 cells to 2 + spanning third */
+  .ef-row { grid-template-columns: 1fr 1fr; }
+  .ef-row .ef-stat:nth-child(3) { grid-column: 1 / -1; }
+  .ef-row .ef-stat { padding: .6rem .65rem; }
+  .ef-row .ef-stat .card-value { font-size: .95rem; }
+
+  /* ETF Compare data grid: 6 items → 2 columns */
+  .etfc-data-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Section-ribbon title: shrink so eyebrow + title stay one line */
+  .section-ribbon-title { font-size: 1.2rem; }
+
+  /* Hero KPI keeps clamp; small inner padding trim */
+  .dashboard-hero { padding: 1.4rem 1.15rem 1.25rem; }
+
+  /* Section ribbon tighter top margin on mobile */
+  .section-ribbon { margin: .9rem 0 .7rem; }
+}
+
+/* ── Smallest standard phones (iPhone SE/Mini, ~375 px) ── */
+@media (max-width: 380px) {
+  /* Modal-only: collapse 2-col form rows to 1 col */
+  .modal-box .form-row { grid-template-columns: 1fr; }
+
+  /* Section ribbon: stack eyebrow above title for very narrow viewports */
+  .section-ribbon {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .15rem;
+  }
+  .section-ribbon .eyebrow::after { display: none; }
+
+  /* Card breathing room on narrow phones */
+  .card { padding: 1rem 1rem .9rem; }
+
+  /* Hero: keep KPI prominent but trim padding further */
+  .dashboard-hero { padding: 1.3rem 1.05rem 1.15rem; }
+
+  /* Stat-card padding: trim slightly for the top-row KPI grid */
+  .stat-card { padding: .7rem .75rem .75rem; }
+
+  /* Recommendation cards/grids inside ETF screen — keep usable */
+  .etf-grid { grid-template-columns: 1fr 1fr; gap: .55rem; }
+}
+
+/* ── Smallest iPhones (iPhone SE 1st gen / iPhone 5, 320 px) ── */
+@media (max-width: 360px) {
+  /* EF row fully stacks */
+  .ef-row { grid-template-columns: 1fr; }
+  .ef-row .ef-stat:nth-child(3) { grid-column: auto; }
+
+  /* Weights legend collapses from 2-col to 1-col */
+  .etfc-weights-legend { grid-template-columns: 1fr; }
+
+  /* Cards-grid-2 (dashboard top-row KPIs) also stacks */
+  .cards-grid-2 { grid-template-columns: 1fr; }
+
+  /* ETF grid (recommendation) stacks */
+  .etf-grid { grid-template-columns: 1fr; }
+
+  /* Tighter card padding on tiny screens */
+  .card { padding: .9rem .9rem .85rem; }
+
+  /* Hero padding tightens further */
+  .dashboard-hero { padding: 1.2rem .95rem 1.05rem; }
+
+  /* Bottom nav label: shrink slightly so 7 buttons stay readable */
+  .nav-btn { font-size: .55rem; }
+
+  /* Section ribbon title: smallest tier */
+  .section-ribbon-title { font-size: 1.1rem; }
+
+  /* EF stat cells extra tight */
+  .ef-row .ef-stat .card-value { font-size: 1rem; }
+
+  /* ETF Compare data grid: stack fully */
+  .etfc-data-grid { grid-template-columns: 1fr; }
 }
 
 /* ─── Reduced motion ─── */
